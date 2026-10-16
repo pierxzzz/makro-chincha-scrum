@@ -7,6 +7,8 @@ rules_version = '2';
 //   Public-to-team display fields; role is immutable after registration.
 // marks/{markId}: v (0/1), t, by, role, uid, updatedAt (timestamp).
 // asist/{YYYY-MM-DD_u0..u4}: d, p, r, t, at, uid, createdAt (timestamp).
+// observaciones/{id}: PO-authored feedback; the assigned Developer may update response/status.
+// evaluaciones/final-review: Scrum Master-only project evaluation.
 // ===============================================================
 
 service cloud.firestore {
@@ -93,6 +95,73 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time;
     }
 
+    function validProjectChecksReset() {
+      return request.resource.data.keys().hasAll(['version', 'uid', 'resetAt'])
+        && request.resource.data.keys().hasOnly(['version', 'uid', 'resetAt'])
+        && request.resource.data.version == 3
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.resetAt == request.time;
+    }
+
+    function validObservation() {
+      return request.resource.data.keys().hasAll([
+          'requirement', 'developer', 'priority', 'text', 'author', 'authorUid', 'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'requirement', 'developer', 'priority', 'text', 'author', 'authorUid', 'createdAt'
+        ])
+        && request.resource.data.requirement is string
+        && request.resource.data.requirement.matches('^RF-(0[1-9]|[12][0-9]|3[0-2])$')
+        && request.resource.data.developer in ['fe', 'be']
+        && request.resource.data.priority in ['Normal', 'Alta', 'Bloqueante']
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 500
+        && request.resource.data.author == member().name
+        && member().role == 'po'
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+    }
+
+    function validObservationResponse() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'developerStatus', 'developerResponse', 'developerUpdatedBy',
+          'developerUpdatedUid', 'developerUpdatedAt'
+        ])
+        && resource.data.developer == member().role
+        && member().role in ['fe', 'be']
+        && (!('developerStatus' in resource.data)
+          || resource.data.developerStatus != 'Resuelta')
+        && request.resource.data.developerStatus in ['En curso', 'Resuelta']
+        && request.resource.data.developerResponse is string
+        && request.resource.data.developerResponse.size() <= 1000
+        && (request.resource.data.developerStatus != 'Resuelta'
+          || request.resource.data.developerResponse.size() > 0)
+        && request.resource.data.developerUpdatedBy == member().name
+        && request.resource.data.developerUpdatedUid == request.auth.uid
+        && request.resource.data.developerUpdatedAt == request.time;
+    }
+
+    function validEvaluation() {
+      return request.resource.data.keys().hasAll([
+          'approval', 'grade', 'teacherNote', 'nextAction', 'updatedBy', 'updatedUid', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'approval', 'grade', 'teacherNote', 'nextAction', 'updatedBy', 'updatedUid', 'updatedAt'
+        ])
+        && request.resource.data.approval in ['Pendiente', 'Sí', 'No']
+        && request.resource.data.grade is string
+        && request.resource.data.grade.size() <= 40
+        && request.resource.data.teacherNote is string
+        && request.resource.data.teacherNote.size() <= 500
+        && request.resource.data.nextAction is string
+        && request.resource.data.nextAction.size() <= 500
+        && request.resource.data.updatedBy == member().name
+        && member().role == 'sm'
+        && request.resource.data.updatedUid == request.auth.uid
+        && request.resource.data.updatedAt == request.time;
+    }
+
     match /members/{uid} {
       allow get: if isOwner(uid);
       allow list: if false;
@@ -110,6 +179,33 @@ service cloud.firestore {
       allow read: if isActiveMember();
       allow create: if isActiveMember() && validAttendance(attendanceId);
       allow update, delete: if false;
+    }
+
+    match /meta/{metaId} {
+      allow get: if isActiveMember() && metaId == 'project-checks-reset-2026-10';
+      allow list: if false;
+      allow create: if isActiveMember()
+        && metaId == 'project-checks-reset-2026-10'
+        && validProjectChecksReset();
+      allow update, delete: if false;
+    }
+
+    match /observaciones/{observationId} {
+      allow read: if isActiveMember();
+      allow create: if isActiveMember() && validObservation();
+      allow update: if isActiveMember() && validObservationResponse();
+      allow delete: if false;
+    }
+
+    match /evaluaciones/{evaluationId} {
+      allow read: if isActiveMember()
+        && member().role == 'sm'
+        && evaluationId == 'final-review';
+      allow create, update: if isActiveMember()
+        && member().role == 'sm'
+        && evaluationId == 'final-review'
+        && validEvaluation();
+      allow delete: if false;
     }
   }
 }

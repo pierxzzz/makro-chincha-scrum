@@ -2,7 +2,7 @@
 
 ## Datos compartidos en la nube
 
-Los checks de RF/RNF, Gantt, ceremonias, tareas por rol, mejoras y asistencias se leen y guardan en Cloud Firestore. Los cambios aparecen en tiempo real en los navegadores y dispositivos conectados al mismo proyecto Firebase. La hora de los cambios se registra en Firestore; la página la muestra en hora de Lima.
+Los checks de RF/RNF, Gantt, ceremonias, tareas por rol, asistencias, observaciones del Product Owner y evaluación docente del Scrum Master se leen y guardan en Cloud Firestore. Los cambios aparecen en tiempo real en los navegadores y dispositivos conectados al mismo proyecto Firebase. Los Developers ven las observaciones asignadas a su rol, actualizan su estado y guardan una respuesta; el Product Owner ve el seguimiento sincronizado. La hora de los cambios se registra en Firestore; la página la muestra en hora de Lima.
 
 La configuración del cliente está en `assets/js/firebase-config.js` y apunta al proyecto `proyectoscrum-ffd53`. Para que la sincronización funcione:
 
@@ -16,7 +16,7 @@ La configuración del cliente está en `assets/js/firebase-config.js` y apunta a
 
 4. Abre la página con conexión a Internet e inicia sesión con el integrante correspondiente. Si la página indica un error de Firebase, no se guardará el cambio localmente como si se hubiera sincronizado.
 
-La primera vez que se marca un check, ese registro pasa a ser el compartido. Los checks históricos que existan solo en el `localStorage` de un navegador no se migran automáticamente: su autoría no se puede verificar.
+En la primera conexión con las nuevas reglas, el tablero elimina una sola vez todos los documentos de la colección Firestore `marks` para que los checks de requisitos, Gantt, tareas y ceremonias comiencen sin marcas. La migración no lee, modifica ni elimina documentos de `asist`, que conserva las asistencias del calendario. Los checks históricos que existan solo en el `localStorage` de un navegador no se migran automáticamente: su autoría no se puede verificar.
 
 ## Seguridad y atribución
 
@@ -33,5 +33,22 @@ El workflow `.github/workflows/pages.yml` publica los archivos estáticos en Git
 - `Requerimientos y Gantt · Scrum Adaptativo · Makro Chincha.html`: página principal.
 - `assets/css/styles.css`: estilos y diseño adaptable.
 - `assets/js/app.js`: tablero, checks, asistencia y sincronización en tiempo real.
+- `assets/images/makro-lost-property-flow.svg`: ilustración local del flujo de objetos perdidos.
 - `assets/js/firebase-config.js`: configuración del proyecto Firebase.
 - `firestore.rules`: permisos de Firestore.
+
+## Seguimiento del proyecto
+
+Los requisitos funcionales y no funcionales reflejan el Word: RF-01 a RF-32 y RNF-01 a RNF-13. La limpieza única inicial borra todas las marcas de avance en `marks` (requisitos, Gantt, tareas y ceremonias), pero no borra asistencias en `asist`. El Gantt contiene exactamente 25 actividades: 24 hasta la semana 14 y la entrega final de la semana 15, a cargo de María, Product Owner.
+
+Antes de habilitar esta versión, publica las nuevas reglas de Firestore:
+
+```sh
+firebase deploy --only firestore:rules --project proyectoscrum-ffd53
+```
+
+El Gantt distribuye el trabajo en cinco sprints de producto, precedidos por la planificación inicial. Permite buscar, filtrar por rol y estado, imprimir el cronograma o descargar como CSV las actividades visibles. El diagrama del flujo operativo incluye una ilustración SVG local, sin dependencias de imágenes externas.
+
+El formulario de observaciones permite al Product Owner asignar comentarios a Front End o Back End y vincularlos con un RF. El Developer asignado puede tomar la observación, registrar avances y marcarla resuelta con una respuesta; la bandeja muestra el tiempo abierto y destaca las pendientes por más de 24 horas. Las reglas permiten al Developer actualizar solo su estado y respuesta, y mantienen inmutables el comentario y su asignación original. La evaluación docente aparece únicamente al rol Scrum Master; sus permisos de lectura y escritura también están restringidos por `firestore.rules`.
+
+Este sitio es el tablero de planificación. La nube guarda checks, asistencias, observaciones y evaluación; no almacena objetos perdidos reales ni implementa la aplicación Flutter/MySQL descrita por los requerimientos. La selección del integrante sigue siendo de demostración, no una autenticación de identidad verificada.
