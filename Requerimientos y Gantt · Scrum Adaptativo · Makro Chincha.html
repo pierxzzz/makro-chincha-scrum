@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Tablero Scrum adaptativo de Makro Chincha: requerimientos, flujo de objetos perdidos, roles, tareas y Gantt.">
+<meta name="description" content="Sistema web de control de objetos perdidos para Makro Chincha: requerimientos, flujo de atención, roles y cronograma.">
 <title>Requerimientos y Gantt · Scrum Adaptativo · Makro Chincha</title>
-<link rel="stylesheet" href="assets/css/styles.css?v=makro-flow-3"></head><body>
-<header><div class="w"><span class="tag">🏬 Makro Chincha · Scrum Adaptativo</span>
+<link rel="stylesheet" href="assets/css/styles.css?v=observations-v1"></head><body>
+<header class="hero"><div class="w"><span class="tag">🏬 Makro Chincha · Scrum Adaptativo</span>
 <h1>Control de objetos perdidos · proyecto 2026-II</h1>
 <p>Makro Supermayorista S.A. · Sede Chincha · UPSJB · Ciclo VIII · 2026-II</p></div></header>
 <nav aria-label="Navegación principal"><div class="w"><a href="#rf">📋 Requerimientos</a><a href="#rnf">🛡️ Calidad</a><a href="#flujo">🔄 Flujo de atención</a><a href="#team">👥 Equipo y roles</a><a href="#gantt">📊 Gantt</a><a href="#cer">🗓️ Ceremonias</a><a href="#observaciones">🗒️ Observaciones</a><button id="calb" style="margin-left:auto">📅 Calendario</button></div></nav>
@@ -51,8 +51,8 @@
 <div class="drive"><input id="dl" type="url" placeholder="Pega aquí el enlace de la carpeta de Drive con las evidencias (capturas)"><button id="dgo">Abrir carpeta</button></div>
 <div class="gwrap"><table class="cer" id="ct"></table></div></section>
 
-<section id="observaciones"><h2>🗒️ Observaciones del Product Owner para Developers</h2>
-<p class="section-intro">María asigna cada observación a Front End o Back End y la vincula con un RF. El Developer recibe su bandeja, puede tomarla, registrar avances y marcarla resuelta con una respuesta; el Product Owner ve el estado en tiempo real. Las observaciones no sustituyen los checks.</p>
+<section id="observaciones"><h2>🗒️ Seguimiento de observaciones del equipo</h2>
+<p class="section-intro">El Product Owner asigna observaciones; el Developer responsable actualiza su respuesta y estado; el Scrum Master consulta el seguimiento. Los cambios se sincronizan en tiempo real. Solo el Product Owner puede eliminar observaciones; la eliminación masiva incluye únicamente las resueltas.</p>
 <form id="observationForm" class="observation-form" hidden>
 <label>Developer destinatario<select id="obDeveloper" required><option value="">Selecciona el rol</option><option value="fe">Airton · Developer 1 · Front End</option><option value="be">Dayron · Developer 2 · Back End</option></select></label>
 <label>Requerimiento relacionado<select id="obRequirement" required><option value="">Selecciona el requerimiento</option></select></label>
@@ -60,6 +60,7 @@
 <label class="observation-text">Observación<textarea id="obText" maxlength="500" rows="3" placeholder="Describe el ajuste esperado, contexto o criterio de aceptación (máx. 500 caracteres)." required></textarea></label>
 <button class="pri" id="saveObservation" type="submit">Enviar observación</button>
 </form>
+<div id="observationRolePanel" class="observation-role-panel" aria-live="polite"></div>
 <p id="observationStatus" role="status" aria-live="polite"></p><div id="observationList" class="observation-list"></div>
 </section>
 
@@ -83,4 +84,4 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js" defer></script>
 <script src="assets/js/firebase-config.js?v=makro-flow-3" defer></script>
-<script src="assets/js/app.js?v=makro-flow-3" defer></script></body></html>
+<script src="assets/js/app.js?v=observations-v1" defer></script></body></html>

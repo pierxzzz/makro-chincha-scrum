@@ -8,6 +8,7 @@ rules_version = '2';
 // marks/{markId}: v (0/1), t, by, role, uid, updatedAt (timestamp).
 // asist/{YYYY-MM-DD_u0..u4}: d, p, r, t, at, uid, createdAt (timestamp).
 // observaciones/{id}: PO-authored feedback; the assigned Developer may update response/status.
+// Only the Product Owner may delete one or more observations.
 // evaluaciones/final-review: Scrum Master-only project evaluation.
 // ===============================================================
 
@@ -131,7 +132,8 @@ service cloud.firestore {
         && resource.data.developer == member().role
         && member().role in ['fe', 'be']
         && (!('developerStatus' in resource.data)
-          || resource.data.developerStatus != 'Resuelta')
+          || resource.data.developerStatus != 'Resuelta'
+          || request.resource.data.developerStatus == 'Resuelta')
         && request.resource.data.developerStatus in ['En curso', 'Resuelta']
         && request.resource.data.developerResponse is string
         && request.resource.data.developerResponse.size() <= 1000
@@ -194,7 +196,7 @@ service cloud.firestore {
       allow read: if isActiveMember();
       allow create: if isActiveMember() && validObservation();
       allow update: if isActiveMember() && validObservationResponse();
-      allow delete: if false;
+      allow delete: if isActiveMember() && member().role == 'po';
     }
 
     match /evaluaciones/{evaluationId} {
