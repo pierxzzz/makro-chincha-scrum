@@ -34,56 +34,70 @@ const RF_GROUPS={"RF-01":"Autenticación, cuentas y permisos","RF-07":"Catálogo
 const RNF=[["RNF-01","La interfaz será clara, consistente e intuitiva para el personal autorizado."],["RNF-02","El sistema aplicará autenticación y autorización según el rol del usuario."],["RNF-03","El sistema impedirá duplicidades e inconsistencias en registros y estados."],["RNF-04","La solución permitirá crecer en usuarios, registros y futuras funcionalidades."],["RNF-05","El código será modular, organizado y documentado."],["RNF-06","Los errores no generarán registros incompletos ni pérdida de información."],["RNF-07","Los registros no se eliminarán físicamente; todas las tablas usarán eliminación lógica (0 = vigente, 1 = eliminado/desactivado)."],["RNF-08","Cada registro conservará el usuario y la fecha/hora de creación y última modificación."],["RNF-09","Las contraseñas se almacenarán con hash BCrypt; las sesiones usarán tokens con expiración y revocación; los datos personales serán visibles según permisos."],["RNF-10","La información se almacenará en MySQL 8.0.16 o superior (InnoDB, utf8mb4), con claves foráneas y restricciones únicas y de validación para las reglas del negocio."],["RNF-11","Aun con usuarios simultáneos, no se duplicarán códigos de objeto, números de constancia ni reclamaciones activas sobre un mismo objeto."]];
 const ROLES=[["po","Product Owner","Prioriza el Product Backlog y valida el valor de cada entrega."],["sm","Scrum Master","Facilita ceremonias, remueve impedimentos y vela por Scrum adaptativo."],["fe","Developer 1 · Front End","Diseña y desarrolla la interfaz gráfica del sistema web con enfoque en UI/UX."],["be","Developer 2 · Back End","Lógica, base de datos, seguridad, estados y auditoría."],["qa","Stakeholder · QA","Valida criterios de aceptación, pruebas y retroalimentación."]];
 const ACT=[
-["Semana 1 · Observar el proceso actual y acordar el alcance con Makro Chincha","po",1,1],
-["Semana 1 · Formar el equipo, asignar responsabilidades y preparar el Product Backlog","sm",1,1],
-["Semana 2 · Priorizar historias y acordar criterios de aceptación con el Product Owner","po",2,2],
-["Semana 2 · Definir arquitectura, modelo de datos e integridad del sistema","be",2,2],
-["Semana 3 · Diseñar y validar la interfaz web (UI/UX) con usuarios","fe",3,3],
-["Semana 3 · Implementar acceso, recuperación y permisos por rol · Sprint 1","be",3,3],
-["Semana 4 · Integrar acceso y probar seguridad, mensajes y reglas de sesión","qa",4,4],
-["Semana 5 · Implementar catálogos, registro y datos del objeto · Sprint 2","be",5,5],
-["Semana 5 · Desarrollar la interfaz web de registro, consulta y navegación","fe",5,5],
-["Semana 6 · Incorporar fotografía, código único e historial de movimientos","be",6,6],
-["Semana 6 · Implementar búsqueda sin tildes y filtros combinados","fe",6,6],
-["Semana 7 · Probar registro, catálogo y búsqueda; acordar mejoras con Makro","qa",7,7],
-["Semana 8 · Registrar reclamaciones activas y administrar su estado · Sprint 3","be",8,8],
-["Semana 8 · Desarrollar la interfaz web para reclamaciones","fe",8,8],
-["Semana 9 · Implementar verificación de identidad y resultado aprobado/rechazado","be",9,9],
-["Semana 9 · Probar anulación, motivos de rechazo y nueva reclamación","qa",9,9],
-["Semana 10 · Implementar entrega atómica, cambio de estado y constancia · Sprint 4","be",10,10],
-["Semana 10 · Probar permisos, concurrencia y recuperación ante fallos","qa",10,10],
-["Semana 11 · Calcular indicadores y generar reportes según permisos","be",11,11],
-["Semana 12 · Implementar interfaces de reportes, exportación y constancia imprimible","fe",12,12],
-["Semana 13 · Revisar privacidad, auditoría, accesibilidad y compatibilidad · Sprint 5","qa",13,13],
-["Semana 13 · Revisar y pulir la interfaz web (UI/UX)","fe",13,13],
-["Semana 14 · Ejecutar regresión, integrar entregables y preparar evidencias","sm",14,14],
-["Semana 14 · Realizar Sprint Review y confirmar criterios de aceptación con Makro","po",14,14],
-["Semana 15 · ENTREGA FINAL: presentar producto, resultados y apreciaciones · María (Product Owner)","po",15,15]
+["Semana 1 · Entrevistar al stakeholder y levantar el proceso actual","po",1,1],
+["Semana 1 · Acordar alcance, objetivos, roles y dinámica de trabajo","sm",1,1],
+["Semana 2 · Redactar borradores de historias, reglas y criterios de aceptación","po",2,2],
+["Semana 2 · Dibujar la arquitectura propuesta y el modelo inicial de datos","be",2,2],
+["Semana 3 · Crear bocetos de navegación y pantallas principales","fe",3,3],
+["Semana 3 · Comparar alternativas técnicas y documentar decisiones de arquitectura","be",3,3],
+["Semana 4 · Preparar prototipo navegable de interfaz en Angular con TypeScript","fe",4,4],
+["Semana 4 · Definir contratos API preliminares y diagrama de componentes","be",4,4],
+["Semana 5 · Revisar el prototipo con el stakeholder y registrar ajustes","qa",5,5],
+["Semana 5 · Refinar historias, prioridades y criterios de aceptación","po",5,5],
+["Semana 6 · Construir componentes visuales de prueba y guía de estilos","fe",6,6],
+["Semana 6 · Preparar esquema de datos y borradores de endpoints con Spring Boot y Java","be",6,6],
+["Semana 7 · Probar prototipos, documentar hallazgos y priorizar mejoras","qa",7,7],
+["Semana 7 · Preparar el backlog técnico y estimar capacidad del equipo","sm",7,7],
+["Semana 8 · Programar una prueba de concepto local en Windows 10","be",8,8],
+["Semana 8 · Conectar el prototipo de Angular con datos de prueba","fe",8,8],
+["Semana 9 · Revisar los borradores técnicos, pruebas iniciales y riesgos","qa",9,9],
+["Semana 9 · Preparar respaldos, inventario de datos de prueba y plan de migración","sm",9,9],
+["Semana 10 · Migrar datos de prueba y servicios Spring Boot desde Windows 10 a Ubuntu en la VPS","be",10,10],
+["Semana 10 · Compilar y desplegar Angular en Ubuntu; verificar rutas y conexión con el backend","fe",10,10],
+["Semana 10 · Validar respaldos, integridad de datos y acceso al entorno Ubuntu","qa",10,10],
+["Semana 10 · Confirmar arquitectura, accesos y checklist de arranque de los sprints","sm",10,10],
+["Semana 11 · Sprint 1: implementar acceso, cuentas y permisos (RF-01 a RF-06)","be",11,11],
+["Semana 11 · Sprint 1: integrar pantallas de acceso y administración de usuarios","fe",11,11],
+["Semana 11 · Sprint 1: probar aceptación, roles y recuperación de acceso","qa",11,11],
+["Semana 11 · Sprint 1: revisar alcance y aceptar el incremento","po",11,11],
+["Semana 12 · Sprint 2: implementar catálogos, objetos, fotos e historial (RF-07 a RF-18)","be",12,12],
+["Semana 12 · Sprint 2: completar las vistas Angular de registro, búsqueda y filtros","fe",12,12],
+["Semana 12 · Sprint 2: validar criterios, navegación y datos del objeto","qa",12,12],
+["Semana 12 · Sprint 2: revisar demostración y actualizar prioridades","po",12,12],
+["Semana 13 · Sprint 3: implementar reclamaciones, verificación y entrega (RF-19 a RF-27)","be",13,13],
+["Semana 13 · Sprint 3: integrar vistas de reclamación, verificación y constancias","fe",13,13],
+["Semana 13 · Sprint 3: probar transiciones, permisos y casos de rechazo","qa",13,13],
+["Semana 13 · Sprint 3: revisar incremento y confirmar reglas de negocio","po",13,13],
+["Semana 14 · Sprint 4: completar indicadores, reportes y auditoría (RF-28 a RF-32)","be",14,14],
+["Semana 14 · Sprint 4: cerrar interfaces, exportación y presentación final","fe",14,14],
+["Semana 14 · Sprint 4: ejecutar regresión, validar evidencias y confirmar calidad","qa",14,14],
+["Semana 14 · Sprint 4: aceptar la implementación completa y acordar seguimiento final","po",14,14],
+["Semana 14 · Sprint 4: consolidar retrospectiva, pendientes y cierre del equipo","sm",14,14]
 ];
 const TEAM={
 po:{p:"María",q:["Visión de negocio","Comunicación con Makro","Toma de decisiones","Criterio de valor"],
-t:["Mantener el Product Backlog ordenado por valor","Definir criterios de aceptación de cada RF","Validar con Makro Chincha en cada Sprint Review","Aceptar o rechazar lo terminado en cada sprint","Reajustar el backlog con la retroalimentación","Aprobar la entrega final del 30 nov","Confirmar reglas de privacidad y datos visibles por rol","Priorizar el flujo de custodia, reclamo, verificación y devolución","Obtener aceptación de Makro para las constancias y reportes","Resolver dudas de alcance antes de que bloqueen al equipo"],
-m:["Historias de usuario en formato «Como… quiero… para…»","Matriz valor/esfuerzo para ordenar los RF","Reunión semanal de 15 min con el encargado de Makro","Registro de decisiones tomadas (qué, por qué, quién)","Mapa de actores y recorrido actual del objeto perdido","Criterios de aceptación comprobables por cada flujo","Priorización MoSCoW revisada en cada Sprint Review"],
+t:["Mantener el Product Backlog ordenado por valor","Definir criterios de aceptación de cada RF","Validar con Makro Chincha en cada Sprint Review","Aceptar o rechazar lo terminado en cada sprint","Reajustar el backlog con la retroalimentación","Aprobar la entrega final del 30 nov","Confirmar reglas de privacidad y datos visibles por rol","Priorizar el flujo de custodia, reclamo, verificación y devolución","Obtener aceptación de Makro para las constancias y reportes","Resolver dudas de alcance antes de que bloqueen al equipo","Revisar el prototipo y validar los borradores antes de priorizar el desarrollo","Confirmar con el stakeholder los criterios de aceptación de cada sprint"],
+m:["Historias de usuario en formato «Como… quiero… para…»","Matriz valor/esfuerzo para ordenar los RF","Reunión semanal de 15 min con el encargado de Makro","Registro de decisiones tomadas (qué, por qué, quién)","Mapa de actores y recorrido actual del objeto perdido","Criterios de aceptación comprobables por cada flujo","Priorización MoSCoW revisada en cada Sprint Review","Validación semanal de incrementos y observaciones del stakeholder"],
 h:"Tu fuerte es el negocio: usa los datos de Makro para decidir y delega el «cómo» al equipo técnico. No ocupes tiempo programando.",
 pr:["Decidir lo que bloquea a Front/Back (dudas de alcance)","Flujo núcleo de entrega de objetos","Seguridad y roles","Reportes y administración al final"]},
 sm:{p:"Piero",q:["Organización","Liderazgo servicial","Resolución de conflictos","Disciplina"],
-t:["Convocar Planning, Daily, Review y Retro","Remover impedimentos en menos de 24 h","Mantener el Gantt y los ✓ al día","Consolidar evidencias en la carpeta de Drive","Cuidar que el sprint no exceda la capacidad del equipo","Elaborar el informe final","Dar seguimiento al registro de riesgos y dependencias","Asegurar que cada incremento tenga evidencia y documentación","Coordinar pruebas de regresión y demostración final","Preparar checklist de publicación y respaldo de entregables"],
-m:["Daily de 15 min con 3 preguntas: ayer, hoy, bloqueos","Lista de impedimentos con responsable y fecha","Burndown semanal simple (pendiente vs. hecho)","Una mejora accionable por Retro, con dueño","Tablero visual de riesgos, decisiones y dependencias","Checklist de salida para cada sprint y publicación"],
+t:["Convocar Planning, Daily, Review y Retro","Remover impedimentos en menos de 24 h","Mantener el Gantt y los ✓ al día","Consolidar evidencias en la carpeta de Drive","Cuidar que el sprint no exceda la capacidad del equipo","Elaborar el informe final","Dar seguimiento al registro de riesgos y dependencias","Asegurar que cada incremento tenga evidencia y documentación","Coordinar pruebas de regresión y demostración final","Preparar checklist de publicación y respaldo de entregables","Dar seguimiento a la migración del entorno de pruebas a Ubuntu","Verificar que cada sprint tenga responsable, evidencia y acuerdos de retrospectiva"],
+m:["Daily de 15 min con 3 preguntas: ayer, hoy, bloqueos","Lista de impedimentos con responsable y fecha","Burndown semanal simple (pendiente vs. hecho)","Una mejora accionable por Retro, con dueño","Tablero visual de riesgos, decisiones y dependencias","Checklist de salida para cada sprint y publicación","Registro de acuerdos y tareas de seguimiento con fecha de revisión"],
 h:"Tu fuerza es ordenar y facilitar: protege el foco del equipo, no impongas; mide el avance con hechos (✓ del Gantt).",
 pr:["Impedimentos que frenan a otros","Ceremonias de la semana","Evidencias del día (capturas)","Informe final al cierre"]},
 fe:{p:"Airton",q:["Interfaz gráfica","UI/UX","Diseño web"],
-t:["Diseñar la interfaz gráfica y la navegación del sistema web","Diseñar las vistas web de acceso, objetos, búsqueda y filtros","Diseñar la interfaz web de reclamaciones y constancias de entrega","Diseñar las vistas web del dashboard y los reportes","Definir validaciones, estados de carga y mensajes de error","Diseñar el flujo visual de custodia, reclamo y devolución","Implementar captura y vista previa de fotografía","Añadir vista imprimible de constancia y exportación autorizada","Validar accesibilidad, contraste y navegación por teclado"],
-m:["Crear componentes visuales reutilizables para la interfaz web","Validar legibilidad y facilidad de uso de las pantallas web","Acordar con Back End el JSON de cada endpoint","Usar datos simulados (mock) para avanzar en paralelo al Back End","Aplicar una identidad visual consistente con Makro","Diseñar estados vacíos, confirmaciones y errores con acciones claras"],
+t:["Diseñar la interfaz gráfica y la navegación del sistema web","Diseñar las vistas web de acceso, objetos, búsqueda y filtros","Diseñar la interfaz web de reclamaciones y constancias de entrega","Diseñar las vistas web del dashboard y los reportes","Definir validaciones, estados de carga y mensajes de error","Diseñar el flujo visual de custodia, reclamo y devolución","Implementar captura y vista previa de fotografía","Añadir vista imprimible de constancia y exportación autorizada","Validar accesibilidad, contraste y navegación por teclado","Preparar el prototipo Angular con TypeScript y revisar su visualización en Ubuntu","Mantener consistencia de componentes y rutas en los cuatro sprints"],
+m:["Crear componentes visuales reutilizables para la interfaz web","Validar legibilidad y facilidad de uso de las pantallas web","Acordar con Back End el JSON de cada endpoint","Usar datos simulados (mock) para avanzar en paralelo al Back End","Aplicar una identidad visual consistente con Makro","Diseñar estados vacíos, confirmaciones y errores con acciones claras","Probar diseño adaptable y navegación con datos de validación"],
 h:"Responsable de la interfaz gráfica y la experiencia de usuario (UI/UX) del sistema web; coordina con Back End la integración de datos.",
 pr:["Desarrollar pantallas a partir de las funciones acordadas","Priorizar registro, reclamación y entrega","Cuidar la claridad de la interfaz y los mensajes de validación","Pulir la presentación visual al final de cada sprint"]},
 be:{p:"Dayron",q:["Lógica y reglas","Rigor técnico","Seguridad","Base de datos"],
-t:["Modelo de datos y migraciones","Autenticación, roles y permisos (RF-01 a 05)","Endpoints de objetos, estados e historial","Reglas de reclamo, verificación y entrega","Auditoría y reportes","Pruebas de las reglas críticas","Implementar hash, cambio obligatorio y vencimiento de sesiones","Crear correlativos anuales y constancias únicos con concurrencia","Aplicar bajas lógicas, claves foráneas y restricciones de integridad","Asegurar transacción atómica para objeto, reclamación e historial"],
-m:["Documentar cada endpoint con un ejemplo","Validar siempre en servidor, no solo en pantalla","Transacciones en la entrega (si falla, no cambia el estado)","Revisión cruzada de código con Front End","Matriz de permisos y campos personales por rol","Registro central de errores con contexto y respuesta segura"],
+t:["Modelo de datos y migraciones","Autenticación, roles y permisos (RF-01 a 05)","Endpoints de objetos, estados e historial","Reglas de reclamo, verificación y entrega","Auditoría y reportes","Pruebas de las reglas críticas","Implementar hash, cambio obligatorio y vencimiento de sesiones","Crear correlativos anuales y constancias únicos con concurrencia","Aplicar bajas lógicas, claves foráneas y restricciones de integridad","Asegurar transacción atómica para objeto, reclamación e historial","Migrar datos de prueba y desplegar servicios Java/Spring Boot en Ubuntu","Documentar respaldo, configuración y verificación de conectividad de la VPS"],
+m:["Documentar cada endpoint con un ejemplo","Validar siempre en servidor, no solo en pantalla","Transacciones en la entrega (si falla, no cambia el estado)","Revisión cruzada de código con Front End","Matriz de permisos y campos personales por rol","Registro central de errores con contexto y respuesta segura","Automatizar comprobaciones de migración y consistencia del esquema"],
 h:"Tu fuerte es la solidez: entrega primero los endpoints que desbloquean a Airton y deja la optimización para cuando todo funcione.",
 pr:["Seguridad por roles e integridad de datos (RNF-02 y 03)","Endpoints que desbloquean a Front End","Reglas de estados y entrega","Reportes y optimización al final"]},
 qa:{p:"Patricia",q:["Ojo crítico","Atención al detalle","Empatía con el usuario","Comunicación clara"],
-t:["Convertir criterios de aceptación en casos de prueba","Probar cada RF al cerrar el sprint y marcar ✓/✗","Reportar defectos: pasos, esperado, obtenido, captura","Pruebas de regresión antes de cada Review","Validar usabilidad con personal de Makro","Firmar la aceptación de cada sprint","Probar intentos fallidos, bloqueos y cambio de contraseña temporal","Verificar transiciones inválidas y que ENTREGADO sea estado final","Simular concurrencia y fallo en medio de la operación de entrega","Comprobar permisos sobre reclamaciones, documentos y reportes"],
-m:["Plantilla única de reporte de defectos","Defectos por severidad: crítico, alto, medio, bajo","Checklist de regresión reutilizable","Probar con ambos roles (Administrador y Atención al Cliente)","Casos negativos y de recuperación para cada flujo crítico","Matriz de cobertura RF/RNF por sprint y evidencia"],
+t:["Convertir criterios de aceptación en casos de prueba","Probar cada RF al cerrar el sprint y marcar ✓/✗","Reportar defectos: pasos, esperado, obtenido, captura","Pruebas de regresión antes de cada Review","Validar usabilidad con personal de Makro","Firmar la aceptación de cada sprint","Probar intentos fallidos, bloqueos y cambio de contraseña temporal","Verificar transiciones inválidas y que ENTREGADO sea estado final","Simular concurrencia y fallo en medio de la operación de entrega","Comprobar permisos sobre reclamaciones, documentos y reportes","Registrar por semana el resultado validado, observaciones y evidencias","Verificar datos migrados y ejecución de frontend y backend en Ubuntu"],
+m:["Plantilla única de reporte de defectos","Defectos por severidad: crítico, alto, medio, bajo","Checklist de regresión reutilizable","Probar con ambos roles (Administrador y Atención al Cliente)","Casos negativos y de recuperación para cada flujo crítico","Matriz de cobertura RF/RNF por sprint y evidencia","Resumen semanal de hallazgos con responsable y fecha de seguimiento"],
 h:"Tu fuerte es la mirada del usuario: prueba temprano y en pequeño (por RF), no solo al final; reporta de forma que el dev reproduzca sin preguntar.",
 pr:["Defectos críticos (seguridad, entrega errónea)","Flujo núcleo de entrega","Casos de borde y validaciones","Detalles visuales al final"]}};
 const $=i=>document.getElementById(i);
@@ -95,17 +109,18 @@ const sd=d=>new Date(d).toLocaleDateString("es-PE",{day:"2-digit",month:"short",
 const wd=w=>START+(w-1)*7*DAY;
 const today=()=>{const parts=Object.fromEntries(new Intl.DateTimeFormat("en-CA",{timeZone:LIMA_TZ,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(limaNow()).filter(p=>p.type!=="literal").map(p=>[p.type,p.value]));return `${parts.year}-${parts.month}-${parts.day}`};
 const weekOf=t=>Math.floor((t-START)/DAY/7)+1,curW=()=>{const w=weekOf(Date.parse(`${today()}T12:00:00Z`));return w<1?0:w};
-const SP=[["Sprint 0 · Inicio y planificación",1,1],["Sprint 1 · Acceso y seguridad",2,4],["Sprint 2 · Catálogos, registro y consulta",5,7],["Sprint 3 · Reclamos y verificación",8,10],["Sprint 4 · Entrega y reportes",11,12],["Sprint 5 · Calidad y estabilización",13,14],["Entrega final",15,15]];
+const SP=[["Preparación · borradores, prototipos y arquitectura",1,10],["Sprint 1 · Acceso y permisos",11,11],["Sprint 2 · Catálogos, registro y consulta",12,12],["Sprint 3 · Reclamaciones y verificación",13,13],["Sprint 4 · Entrega, reportes y cierre",14,14],["Cierre del proyecto",15,15]];
 const spW=w=>SP.find(x=>w>=x[1]&&w<=x[2]);
 const ph=w=>(spW(w)||["—"])[0];
 const CC=[["m","Reunión Zoom/Meet"],["d","Daily / seguimiento"],["e","Captura en Drive"],["r","Review + Retro"]];
 const ATR=["Usabilidad","Seguridad por roles","Integridad","Escalabilidad","Mantenibilidad","Fiabilidad","Eliminación lógica","Trazabilidad","Seguridad y privacidad","Base de datos","Concurrencia"];
-const reqSprint=i=>i<6?1:i<18?2:i<27?3:4,dueRF=i=>[4,7,10,12][reqSprint(i)-1],dueRNF=i=>[4,4,10,12,14,10,12,14,4,5,10][i];
+const reqSprint=i=>i<6?1:i<18?2:i<27?3:4,dueRF=i=>[11,12,13,14][reqSprint(i)-1],dueRNF=i=>[11,11,11,11,11,12,12,12,13,12,14][i];
 const reqMarkKey=(type,id)=>`${type==="rf"?"rf-v2":"rnf-v2"}_${id}`;
-const REVIEW_ID="final-review",RESET_ID="project-checks-reset-2026-10";
+const REVIEW_ID="final-review",RESET_ID="project-gantt-checks-reset-2026-11";
 const REVIEW_FIELDS={approval:"Pendiente",grade:"",teacherNote:"",nextAction:""};
 const RF_PRIORITY=RF.map(r=>r.id);
 let st={},att={},observations=[],review={...REVIEW_FIELDS},mode="sin-sesion",sel=today(),cm=Number(today().slice(5,7))-1,cy=Number(today().slice(0,4)),onlyP=false,prompted=false,onlyMe=false,deletingResolvedObservations=false;
+let weeklyValidations={},weeklyValidationUnsub=null,storage=null;
 const ENTRY=new Date(),L=k=>{try{return JSON.parse(localStorage.getItem(k))||{}}catch(e){console.error(`No se pudo leer ${k} del almacenamiento local.`,e);return {}}},SV=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){console.error(`No se pudo guardar ${k} en el almacenamiento local.`,e);return false}};
 const by=x=>x&&x.by?" · "+x.by:"";
 const ok=k=>st[k]&&st[k].v==1,WHO=[["Piero","Scrum Master"],["María","Product Owner"],["Airton","Developer 1 · Front End"],["Dayron","Developer 2 · Back End"],["Patricia","Stakeholder · QA"]],ROLE_CODES=["sm","po","fe","be","qa"],ACCESS_PINS={Piero:"48216",María:"73105",Airton:"29047",Dayron:"86423",Patricia:"51698"},wid=()=>{const i=WHO.findIndex(x=>x[0]==who);return i<0?null:today()+"_u"+i},myAtt=()=>wid()?att[wid()]:null;let who="",auth=null,db=null,currentUid="",cloudReady=false,marksUnsub=null,attendanceUnsub=null,observationsUnsub=null,reviewUnsub=null;
@@ -119,7 +134,8 @@ RF.forEach((r,i)=>{const key=reqMarkKey("rf",r.id),group=RF_GROUPS[r.id];
 if(!q&&!onlyP&&group&&group!==lastGroup)h+=`<tr class="gh"><td colspan="6">${group}</td></tr>`;lastGroup=group||lastGroup;
 if(onlyP&&st[key])return;if(q&&!normalizeText(r.id+r.n+r.v).includes(q))return;h+=row(key,r.id,r.n,r.v,"S"+reqSprint(i))});$("rft").innerHTML=h}
 function rnfHtml(){let h="<tr><th>Código</th><th>Requerimiento</th><th>Atributo de calidad</th><th>Sprint</th><th>Estado</th><th>Fecha y hora</th></tr>";
-RNF.forEach((r,i)=>h+=row(reqMarkKey("rnf",r[0]),r[0],r[1],ATR[i],i<4?"S1":i<7?"S2":i<10?"S3":i<12?"S4":"Transversal"));$("rnt").innerHTML=h}
+const sprint=["S1","S1","S1","S1","S1","S2","S2","S2","S3","S2","S4"];
+RNF.forEach((r,i)=>h+=row(reqMarkKey("rnf",r[0]),r[0],r[1],ATR[i],sprint[i]));$("rnt").innerHTML=h}
 function normalizeText(value){return value.toLocaleLowerCase("es-PE").normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
 function activityStatus(activity,index,cw){const x=st["g"+index];if(x&&x.v==1)return{key:"done",label:"Cumplida",className:"ok"};
 if(x&&x.v==0)return{key:"no",label:"No cumplida",className:"no"};if(activity[3]<cw)return{key:"late",label:"Atrasada",className:"no"};
@@ -129,13 +145,13 @@ return ACT.map((activity,index)=>index).filter(index=>{const activity=ACT[index]
 const text=normalizeText(`${activity[0]} ${TEAM[activity[1]].p} ${roleName}`);
 return(role==="all"||activity[1]===role)&&(state==="all"||status.key===state)&&(!query||text.includes(query))}).sort((left,right)=>ACT[left][2]-ACT[right][2]||ACT[left][3]-ACT[right][3]||left-right)}
 function ganttHtml(){const cw=curW(),indices=filteredActivityIndices(cw);let h="<tr><th>Cumple</th><th class='l'>Actividad y responsable</th>";
-for(let w=1;w<=15;w++)h+=`<th class="${w==cw?"cur":""}">S${w}<br><small>${sd(wd(w))}</small></th>`;h+="<th>Estado</th></tr>";
+for(let w=1;w<=14;w++)h+=`<th class="${w==cw?"cur":""}">S${w}<br><small>${sd(wd(w))}</small></th>`;h+="<th>Estado</th></tr>";
 indices.forEach(i=>{const a=ACT[i],k="g"+i,status=activityStatus(a,i,cw);
 h+=`<tr class="${status.key==="done"?"done-row":""}"><td>${sg(k)}</td><td class="n">${a[0]}<small class="ow">👤 ${TEAM[a[1]].p} · ${ROLES.find(r=>r[0]===a[1])[1]}</small><small class="ts">${tsl(k)}</small></td>`;
-for(let w=1;w<=15;w++){const on=w>=a[2]&&w<=a[3];h+=`<td class="${w==cw?"cur":""}"><div class="cell ${on?"on":""}" style="${on?`background:var(--${a[1]});opacity:${w<=cw?1:.4}`:""}"></div></td>`}
+for(let w=1;w<=14;w++){const on=w>=a[2]&&w<=a[3];h+=`<td class="${w==cw?"cur":""}"><div class="cell ${on?"on":""}" style="${on?`background:var(--${a[1]});opacity:${w<=cw?1:.4}`:""}"></div></td>`}
 h+=`<td><span class="chip ${status.className}">${status.label}</span></td></tr>`});
-if(!indices.length)h+='<tr><td colspan="18" class="empty-state">No hay actividades que coincidan con estos filtros.</td></tr>';
-$("gt").innerHTML=h;$("ganttSummary").textContent=`Mostrando ${indices.length} de ${ACT.length} actividades · ${ACT.filter((a,i)=>ok("g"+i)).length} completadas.`}
+if(!indices.length)h+='<tr><td colspan="17" class="empty-state">No hay actividades que coincidan con estos filtros.</td></tr>';
+$("gt").innerHTML=h;$("ganttSummary").textContent=`Semanas 1–10: preparación · semanas 11–14: cuatro sprints · ${ACT.filter((a,i)=>ok("g"+i)).length} de ${ACT.length} actividades completadas.`}
 function exportGanttCsv(){const cw=curW(),indices=filteredActivityIndices(cw),escape=value=>`"${String(value).replace(/"/g,'""')}"`;
 const rows=[["Actividad","Responsable","Rol","Semana inicial","Semana final","Estado","Fecha/hora del último cambio"]];
 indices.forEach(index=>{const activity=ACT[index],status=activityStatus(activity,index,cw);rows.push([activity[0],TEAM[activity[1]].p,ROLES.find(r=>r[0]===activity[1])[1],activity[2],activity[3],status.label,recordTime(st["g"+index])])});
@@ -221,9 +237,65 @@ for(let offset=0;offset<docs.length;offset+=450){const batch=db.batch(),chunk=do
 $("observationStatus").textContent=`Se eliminaron ${deleted} observación(es) resuelta(s); el cambio se sincroniza con el equipo.`
 }catch(error){console.error("No se pudieron eliminar todas las observaciones resueltas.",error);const progress=deleted?` Se eliminaron ${deleted} antes del error; vuelve a intentarlo para las restantes.`:"";setCloudStatus(`No se completó la eliminación masiva: ${error.message}.${progress}`,true)}
 finally{deletingResolvedObservations=false;renderObservations()}}
+function renderStakeholderValidation(force=false){
+const visible=memberRole()==="qa";
+$("stakeholderNav").hidden=!visible;$("stakeholderValidation").hidden=!visible;
+if(!visible)return;
+const container=$("weeklyValidationList");
+if(!cloudReady){container.innerHTML='<p class="empty-state">Conéctate a Firestore para registrar las validaciones semanales.</p>';container.dataset.loaded="";return}
+if(!force&&container.dataset.loaded==="true")return;
+container.dataset.loaded="true";
+container.innerHTML=Array.from({length:14},(_,index)=>{
+const week=index+1,id=`week-${String(week).padStart(2,"0")}`,data=weeklyValidations[id]||{},files=Array.isArray(data.files)?data.files:[];
+const links=Array.isArray(data.evidenceLinks)?data.evidenceLinks:[];
+return `<form class="validation-week" data-validation-week="${week}"><div class="validation-week-heading"><b>Semana ${week} · ${escapeHtml(ph(week))}</b><label><input class="validation-check" type="checkbox" ${data.validated===true?"checked":""}> Semana validada</label></div><label>Observación<textarea class="validation-observation" maxlength="1000" rows="3" placeholder="Anota resultados, hallazgos o pendientes de esta semana.">${escapeHtml(data.observation||"")}</textarea></label><label>Enlaces de referencia<textarea class="validation-links" rows="2" placeholder="Pega enlaces HTTPS (uno por línea), por ejemplo la carpeta de evidencias.">${escapeHtml(links.join("\n"))}</textarea></label><label>Archivos de evidencia (Word, Excel o PowerPoint · máx. 10 MB por archivo)<input class="validation-files" type="file" multiple accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx"></label>${files.length?`<div class="validation-files-list"><b>Archivos guardados</b><ul>${files.map(file=>`<li><button type="button" class="file-link" data-validation-file="${escapeHtml(file.path)}">${escapeHtml(file.name)}</button> · ${Math.ceil(file.size/1024)} KB</li>`).join("")}</ul></div>`:""}<div class="validation-week-footer"><small>${data.updatedBy?`Actualizado por ${escapeHtml(data.updatedBy)} · ${escapeHtml(recordTime(data))}`:"Sin validación registrada"}</small><button class="pri" type="submit" ${!cloudReady?"disabled":""}>Guardar semana ${week}</button></div></form>`
+}).join("");
+}
+function validationFileType(file){
+const extension=file.name.toLowerCase().split(".").pop(),types={doc:"application/msword",docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",xls:"application/vnd.ms-excel",xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",ppt:"application/vnd.ms-powerpoint",pptx:"application/vnd.openxmlformats-officedocument.presentationml.presentation"};
+return types[extension]||"";
+}
+async function saveWeeklyValidation(event){
+event.preventDefault();
+const form=event.currentTarget,week=Number(form.dataset.validationWeek),weekId=`week-${String(week).padStart(2,"0")}`,status=$("weeklyValidationStatus");
+if(memberRole()!=="qa"){status.textContent="Solo el stakeholder puede guardar validaciones semanales.";return}
+if(!cloudReady||!currentUid){status.textContent="La conexión a Firestore no está disponible; no se guardaron los cambios.";return}
+const observation=form.querySelector(".validation-observation").value.trim(),linkText=form.querySelector(".validation-links").value.trim(),files=Array.from(form.querySelector(".validation-files").files||[]);
+const links=linkText?linkText.split(/\r?\n/).map(value=>value.trim()).filter(Boolean):[];
+if(!Number.isInteger(week)||week<1||week>14||observation.length>1000||links.length>10||files.length>10){status.textContent="Revisa los datos: observación máx. 1000 caracteres, hasta 10 enlaces y 10 archivos por semana.";return}
+if(files.length&&!storage){status.textContent="Firebase Storage no está disponible; revisa la configuración del bucket para subir archivos.";return}
+const cleanLinks=[];
+for(const value of links){try{const url=new URL(value);if(!["https:","http:"].includes(url.protocol))throw new Error();cleanLinks.push(url.href)}catch{status.textContent=`El enlace no es válido: ${value}`;return}}
+const existing=weeklyValidations[weekId]?.files||[];
+if(existing.length+files.length>10){status.textContent="Se permiten como máximo 10 archivos por semana.";return}
+for(const file of files){if(!validationFileType(file)||file.size>10*1024*1024){status.textContent=`${file.name}: usa Word, Excel o PowerPoint de hasta 10 MB.`;return}}
+const button=form.querySelector('button[type="submit"]');button.disabled=true;status.textContent=`Subiendo evidencias de la semana ${week}…`;
+const uploaded=[];
+try{
+for(const file of files){
+const contentType=validationFileType(file),safeName=file.name.replace(/[^\w.-]/g,"_"),path=`validaciones/${currentUid}/semana-${week}/${Date.now()}-${uploaded.length}-${safeName}`;
+await storage.ref(path).put(file,{contentType,customMetadata:{uploadedBy:currentUid}});
+uploaded.push({name:file.name,path,size:file.size,contentType});
+}
+await db.collection("validacionesSemanales").doc(weekId).set({week,validated:form.querySelector(".validation-check").checked,observation,evidenceLinks:cleanLinks,files:[...existing,...uploaded],updatedBy:who,updatedUid:currentUid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+form.querySelector(".validation-files").value="";
+status.textContent=`Validación de la semana ${week} guardada y sincronizada.`;
+}catch(error){
+const cleanupErrors=[];
+for(const file of uploaded){try{await storage.ref(file.path).delete()}catch(cleanupError){console.error("No se pudo limpiar un archivo de evidencia tras fallar el guardado.",cleanupError);cleanupErrors.push(cleanupError.message)}}
+console.error("No se pudo guardar la validación semanal.",error);
+status.textContent=`No se guardó la validación de la semana ${week}: ${error.message}${cleanupErrors.length?` No se pudieron limpiar ${cleanupErrors.length} archivo(s) subido(s).`:""}`;
+}finally{button.disabled=false}
+}
+function downloadValidationFile(path){
+if(memberRole()!=="qa"||!cloudReady||!storage){$("weeklyValidationStatus").textContent="No tienes permiso o no hay conexión para abrir esta evidencia.";return}
+const popup=window.open("about:blank","_blank");
+if(!popup){$("weeklyValidationStatus").textContent="Permite las ventanas emergentes para abrir la evidencia.";return}
+storage.ref(path).getDownloadURL().then(url=>{popup.location=url}).catch(error=>{popup.close();console.error("No se pudo abrir la evidencia almacenada.",error);$("weeklyValidationStatus").textContent=`No se pudo abrir el archivo: ${error.message}`})
+}
 function populateReview(){const form=review;$("reviewApproval").value=form.approval||"Pendiente";$("reviewGrade").value=form.grade||"";$("reviewTeacherNote").value=form.teacherNote||"";$("reviewNextAction").value=form.nextAction||"";$("reviewUpdated").textContent=form.updatedBy?`Última actualización: ${form.updatedBy} · ${recordTime(form)}`:"Sin evaluación registrada."}
 function renderReview(){const visible=memberRole()==="sm";$("teacherReview").hidden=!visible;$("saveReview").disabled=!cloudReady||!visible}
-function render(){rfHtml();rnfHtml();ganttHtml();rolesHtml();cerHtml();teamHtml();stats();banner();panel();renderObservations();renderReview();if(!$("mdc").hidden)calHtml()}
+function render(){rfHtml();rnfHtml();ganttHtml();rolesHtml();cerHtml();teamHtml();stats();banner();panel();renderObservations();renderReview();renderStakeholderValidation();if(!$("mdc").hidden)calHtml()}
 function setCloudStatus(message,isError=false){const status=$("cloudState");status.textContent=message;status.classList.toggle("error",isError);status.classList.toggle("connected",!isError&&mode==="cloud")}
 function setAuthStatus(message,isError=false){const status=$("authStatus");status.textContent=message;status.classList.toggle("bad",isError);status.classList.toggle("good",!isError&&Boolean(message))}
 function maybePrompt(){if(prompted)return;prompted=true;if(mode!=="cloud")openAtt()}
@@ -270,20 +342,22 @@ const id=today()+"_u"+i;if(att[id]){setCloudStatus("La asistencia de este rol ya
 try{await db.collection("asist").doc(id).set({d:today(),p:n,r:WHO[i][1],t:fmt(new Date()),at:fmt(new Date()),uid:currentUid,createdAt:firebase.firestore.FieldValue.serverTimestamp()})}
 catch(e){console.error("No se pudo registrar la asistencia en Firestore.",e);setCloudStatus(`No se registró la asistencia en la nube: ${e.message}`,true)}}
 async function ensureProjectChecksReset(){const marker=db.collection("meta").doc(RESET_ID),snapshot=await marker.get();if(snapshot.exists)return;
-const existingMarks=await db.collection("marks").get(),docs=existingMarks.docs;
+const existingMarks=await db.collection("marks").get(),docs=existingMarks.docs.filter(doc=>/^g\d+$/.test(doc.id));
 try{for(let offset=0;offset<docs.length||offset===0;offset+=450){const batch=db.batch(),end=Math.min(offset+450,docs.length);for(let i=offset;i<end;i++)batch.delete(docs[i].ref);
-if(end===docs.length)batch.set(marker,{version:3,uid:currentUid,resetAt:firebase.firestore.FieldValue.serverTimestamp()});await batch.commit();if(end===docs.length)break}}
+if(end===docs.length)batch.set(marker,{version:4,uid:currentUid,resetAt:firebase.firestore.FieldValue.serverTimestamp()});await batch.commit();if(end===docs.length)break}}
 catch(error){const existing=await marker.get();if(existing.exists)return;throw error}}
-function stopCloudSubscriptions(){if(marksUnsub)marksUnsub();if(attendanceUnsub)attendanceUnsub();if(observationsUnsub)observationsUnsub();if(reviewUnsub)reviewUnsub();
-marksUnsub=null;attendanceUnsub=null;observationsUnsub=null;reviewUnsub=null}
-function subscribeCloudData(){stopCloudSubscriptions();cloudReady=false;let marksReady=false,attendanceReady=false,observationsReady=false,reviewReady=memberRole()!=="sm";const uid=currentUid;
+function stopCloudSubscriptions(){if(marksUnsub)marksUnsub();if(attendanceUnsub)attendanceUnsub();if(observationsUnsub)observationsUnsub();if(reviewUnsub)reviewUnsub();if(weeklyValidationUnsub)weeklyValidationUnsub();
+marksUnsub=null;attendanceUnsub=null;observationsUnsub=null;reviewUnsub=null;weeklyValidationUnsub=null}
+function subscribeCloudData(){stopCloudSubscriptions();cloudReady=false;let marksReady=false,attendanceReady=false,observationsReady=false,reviewReady=memberRole()!=="sm",weeklyValidationReady=memberRole()!=="qa";const uid=currentUid;
 setCloudStatus("Preparando el reinicio único de checks y cargando la información compartida…");
-const ready=()=>{if(!marksReady||!attendanceReady||!observationsReady||!reviewReady)return;cloudReady=true;setCloudStatus(`Conectado a Firestore · ${who} · cambios sincronizados en tiempo real.`);render()};
+const ready=()=>{if(!marksReady||!attendanceReady||!observationsReady||!reviewReady||!weeklyValidationReady)return;cloudReady=true;setCloudStatus(`Conectado a Firestore · ${who} · cambios sincronizados en tiempo real.`);render()};
 const failed=(label,error)=>{cloudReady=false;console.error(label,error);setCloudStatus(`${label}: ${error.message}`,true);render()};
 attendanceUnsub=db.collection("asist").onSnapshot(snapshot=>{att={};snapshot.forEach(doc=>{att[doc.id]=doc.data()});attendanceReady=true;render();ready()},error=>failed("No se pudieron leer las asistencias en la nube",error));
 observationsUnsub=db.collection("observaciones").orderBy("createdAt","desc").onSnapshot(snapshot=>{observations=snapshot.docs.map(doc=>({id:doc.id,...doc.data()}));observationsReady=true;render();ready()},error=>failed("No se pudieron leer las observaciones",error));
 if(memberRole()==="sm")reviewUnsub=db.collection("evaluaciones").doc(REVIEW_ID).onSnapshot(snapshot=>{review=snapshot.exists?{...REVIEW_FIELDS,...snapshot.data()}:{...REVIEW_FIELDS};populateReview();reviewReady=true;render();ready()},error=>failed("No se pudo leer la evaluación docente",error));
 else review={...REVIEW_FIELDS};
+if(memberRole()==="qa")weeklyValidationUnsub=db.collection("validacionesSemanales").onSnapshot(snapshot=>{weeklyValidations={};snapshot.forEach(doc=>{weeklyValidations[doc.id]=doc.data()});weeklyValidationReady=true;renderStakeholderValidation(true);ready()},error=>failed("No se pudieron leer las validaciones semanales",error));
+else weeklyValidations={};
 ensureProjectChecksReset().then(()=>{if(currentUid!==uid)return;marksUnsub=db.collection("marks").onSnapshot(snapshot=>{st={};snapshot.forEach(doc=>{st[doc.id]=doc.data()});marksReady=true;render();ready()},error=>failed("No se pudieron leer los checks en la nube",error))})
 .catch(error=>failed("No se pudieron reiniciar las marcas de avance sin alterar las asistencias",error))}
 function activateCloudRole(name,user){const person=WHO.find(entry=>entry[0]===name);if(!person)throw new Error("El integrante seleccionado no existe.");
@@ -303,18 +377,19 @@ setAuthStatus("Conectando con la nube…");$("loginButton").disabled=true;
 connectCloudRole(name).then(()=>{$("loginPin").value="";setAuthStatus("Conectado. Los checks se compartirán en tiempo real.")})
 .catch(error=>{console.error("No se pudo iniciar sesión en Firestore.",error);setAuthStatus(`No se pudo conectar: ${error.message}`,true)})
 .finally(()=>{$("loginButton").disabled=false})}
-function handleAuthState(user){if(!user){stopCloudSubscriptions();who="";currentUid="";cloudReady=false;st={};att={};observations=[];review={...REVIEW_FIELDS};mode="sin-sesion";setCloudStatus("Sin sesión en la nube. Conéctate para ver y guardar los checks del equipo.",true);render();maybePrompt();return}
+function handleAuthState(user){if(!user){stopCloudSubscriptions();who="";currentUid="";cloudReady=false;st={};att={};observations=[];weeklyValidations={};review={...REVIEW_FIELDS};mode="sin-sesion";setCloudStatus("Sin sesión en la nube. Conéctate para ver y guardar los checks del equipo.",true);render();maybePrompt();return}
 currentUid=user.uid;db.collection("members").doc(user.uid).get().then(snapshot=>{if(!snapshot.exists){mode="sin-sesion";setCloudStatus("Elige tu integrante para abrir los datos compartidos.");render();maybePrompt();return}
 const member=snapshot.data();if(member.active!==true||!WHO.some((person,i)=>person[0]===member.name&&person[1]===member.displayRole&&ROLE_CODES[i]===member.role))throw new Error("El perfil guardado en la nube no coincide con los integrantes habilitados.");
 activateCloudRole(member.name,user)}).catch(error=>{mode="error";cloudReady=false;setCloudStatus(`No se pudo validar el perfil en Firestore: ${error.message}`,true);console.error("No se pudo validar el perfil de Firestore.",error);render();maybePrompt()})}
 function startCloudMode(){render();if(!window.firebase||!window.FIREBASE_CONFIG){mode="error";setCloudStatus("No está disponible el SDK o la configuración de Firebase. No se guardarán cambios.",true);maybePrompt();return}
-try{if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);auth=firebase.auth();db=firebase.firestore();auth.onAuthStateChanged(handleAuthState,error=>{mode="error";cloudReady=false;setCloudStatus(`Error de autenticación de Firebase: ${error.message}`,true);console.error("Falló Firebase Authentication.",error);maybePrompt()})}
+try{if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);auth=firebase.auth();db=firebase.firestore();try{storage=firebase.storage()}catch(storageError){storage=null;console.error("Firebase Storage no está disponible para subir evidencias.",storageError)}auth.onAuthStateChanged(handleAuthState,error=>{mode="error";cloudReady=false;setCloudStatus(`Error de autenticación de Firebase: ${error.message}`,true);console.error("Falló Firebase Authentication.",error);maybePrompt()})}
 catch(error){mode="error";setCloudStatus(`No se pudo inicializar Firebase: ${error.message}`,true);console.error("No se pudo inicializar Firebase.",error);maybePrompt()}}
 document.addEventListener("click",e=>{const t=e.target,b=t.closest("button[data-k]");
 if(b){const k=b.dataset.k,v=+b.dataset.v,x=st[k];if(x&&x.v===v)removeMark(k);else saveMark(k,v);return}
 const tk=t.closest("input[data-tk]");if(tk){tk.checked?saveMark(tk.dataset.tk,1):removeMark(tk.dataset.tk);return}
 if(t.closest("#deleteResolvedObservations")){deleteResolvedObservations();return}
 const observationAction=t.closest("button[data-ob-action]");if(observationAction){updateObservation(observationAction.dataset.obId,observationAction.dataset.obAction);return}
+const evidenceFile=t.closest("button[data-validation-file]");if(evidenceFile){downloadValidationFile(evidenceFile.dataset.validationFile);return}
 const w=t.closest("button[data-w]");if(w)return saveAtt(w.dataset.w);if(t.id=="chg"){e.preventDefault();openAtt();return}
 if(t.id=="atb"||t.id=="mak")return who?saveAtt():openAtt();
 const d=t.closest(".cd");if(d){sel=d.dataset.d;calHtml()}});
@@ -322,7 +397,7 @@ $("calb").onclick=()=>{sel=today();cm=Number(sel.slice(5,7))-1;cy=Number(sel.sli
 $("cx").onclick=()=>$("mdc").hidden=true;$("cp").onclick=()=>{cm--;if(cm<0){cm=11;cy--}calHtml()};$("cn").onclick=()=>{cm++;if(cm>11){cm=0;cy++}calHtml()};
 $("loginForm").addEventListener("submit",loginWithRole);
 $("obRequirement").innerHTML+=RF.map(requirement=>`<option value="${requirement.id}">${requirement.id} · ${escapeHtml(requirement.n)}</option>`).join("");
-$("observationForm").addEventListener("submit",saveObservation);$("saveReview").onclick=saveReview;
+$("observationForm").addEventListener("submit",saveObservation);$("saveReview").onclick=saveReview;$("weeklyValidationList").addEventListener("submit",saveWeeklyValidation);
 $("tmy").onclick=e=>{onlyMe=!onlyMe;e.target.textContent=onlyMe?"Mostrar todos los roles":"Mostrar solo mi rol";teamHtml()};$("q").oninput=rfHtml;$("fp").onclick=e=>{onlyP=!onlyP;e.target.textContent=onlyP?"Ver todos":"Ver solo pendientes";rfHtml()};
 $("gq").oninput=ganttHtml;$("gRole").onchange=ganttHtml;$("gState").onchange=ganttHtml;
 $("clearGantt").onclick=()=>{$("gq").value="";$("gRole").value="all";$("gState").value="all";ganttHtml()};
@@ -330,6 +405,6 @@ $("exportGantt").onclick=exportGanttCsv;$("printGantt").onclick=()=>window.print
 $("th").onclick=()=>{const r=document.documentElement;r.dataset.theme=getComputedStyle(r).getPropertyValue("--bg").trim()=="#0d1324"?"light":"dark"};
 $("lg").innerHTML=ROLES.map(r=>`<span><i style="background:var(--${r[0]})"></i>${r[1]}</span>`).join("");
 
-$("dl").value=L("mk3d").u||"";$("dl").onchange=()=>SV("mk3d",{u:$("dl").value});
-$("dgo").onclick=()=>{const u=$("dl").value.trim();if(/^https?:\/\//.test(u))window.open(u,"_blank","noopener")};
+$("dl").value=L("mk3d").u||"";$("dl").onchange=()=>{SV("mk3d",{u:$("dl").value});$("driveStatus").textContent="Enlace guardado en este navegador."};
+$("dgo").onclick=()=>{try{const u=new URL($("dl").value.trim());if(!["https:","http:"].includes(u.protocol))throw new Error();window.open(u.href,"_blank","noopener,noreferrer");$("driveStatus").textContent="Abriendo la carpeta de evidencias…"}catch{$("driveStatus").textContent="Pega un enlace web válido (https:// o http://) antes de abrir la carpeta."}};
 render();setInterval(tick,1000);setInterval(render,60000);startCloudMode();

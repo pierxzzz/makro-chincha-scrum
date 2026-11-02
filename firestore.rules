@@ -8,7 +8,8 @@ rules_version = '2';
 // marks/{markId}: v (0/1), t, by, role, uid, updatedAt (timestamp).
 // asist/{YYYY-MM-DD_u0..u4}: d, p, r, t, at, uid, createdAt (timestamp).
 // observaciones/{id}: PO-authored feedback; the assigned Developer may update response/status.
-// Only the Product Owner may delete one or more observations.
+// Only the Product Owner may permanently delete observations.
+// validacionesSemanales/{week-01..week-14}: stakeholder-only weekly validation and evidence metadata.
 // evaluaciones/final-review: Scrum Master-only project evaluation.
 // ===============================================================
 
@@ -99,9 +100,35 @@ service cloud.firestore {
     function validProjectChecksReset() {
       return request.resource.data.keys().hasAll(['version', 'uid', 'resetAt'])
         && request.resource.data.keys().hasOnly(['version', 'uid', 'resetAt'])
-        && request.resource.data.version == 3
+        && request.resource.data.version == 4
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.resetAt == request.time;
+    }
+
+    function validWeeklyValidation(weekId) {
+      return weekId.matches('^week-(0[1-9]|1[0-4])$')
+        && request.resource.data.keys().hasAll([
+          'week', 'validated', 'observation', 'evidenceLinks', 'files',
+          'updatedBy', 'updatedUid', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'week', 'validated', 'observation', 'evidenceLinks', 'files',
+          'updatedBy', 'updatedUid', 'updatedAt'
+        ])
+        && request.resource.data.week is int
+        && request.resource.data.week >= 1
+        && request.resource.data.week <= 14
+        && request.resource.data.validated is bool
+        && request.resource.data.observation is string
+        && request.resource.data.observation.size() <= 1000
+        && request.resource.data.evidenceLinks is list
+        && request.resource.data.evidenceLinks.size() <= 10
+        && request.resource.data.files is list
+        && request.resource.data.files.size() <= 10
+        && request.resource.data.updatedBy == member().name
+        && member().role == 'qa'
+        && request.resource.data.updatedUid == request.auth.uid
+        && request.resource.data.updatedAt == request.time;
     }
 
     function validObservation() {
@@ -184,12 +211,20 @@ service cloud.firestore {
     }
 
     match /meta/{metaId} {
-      allow get: if isActiveMember() && metaId == 'project-checks-reset-2026-10';
+      allow get: if isActiveMember() && metaId == 'project-gantt-checks-reset-2026-11';
       allow list: if false;
       allow create: if isActiveMember()
-        && metaId == 'project-checks-reset-2026-10'
+        && metaId == 'project-gantt-checks-reset-2026-11'
         && validProjectChecksReset();
       allow update, delete: if false;
+    }
+
+    match /validacionesSemanales/{weekId} {
+      allow read: if isActiveMember() && member().role == 'qa';
+      allow create, update: if isActiveMember()
+        && member().role == 'qa'
+        && validWeeklyValidation(weekId);
+      allow delete: if false;
     }
 
     match /observaciones/{observationId} {

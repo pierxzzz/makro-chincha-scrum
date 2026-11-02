@@ -3,11 +3,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Sistema web de control de objetos perdidos para Makro Chincha: requerimientos, flujo de atención, roles y cronograma.">
 <title>Requerimientos y Gantt · Scrum Adaptativo · Makro Chincha</title>
-<link rel="stylesheet" href="assets/css/styles.css?v=observations-v1"></head><body>
+<link rel="stylesheet" href="assets/css/styles.css?v=sprints-validation-v1"></head><body>
 <header class="hero"><div class="w"><span class="tag">🏬 Makro Chincha · Scrum Adaptativo</span>
 <h1>Control de objetos perdidos · proyecto 2026-II</h1>
 <p>Makro Supermayorista S.A. · Sede Chincha · UPSJB · Ciclo VIII · 2026-II</p></div></header>
-<nav aria-label="Navegación principal"><div class="w"><a href="#rf">📋 Requerimientos</a><a href="#rnf">🛡️ Calidad</a><a href="#flujo">🔄 Flujo de atención</a><a href="#team">👥 Equipo y roles</a><a href="#gantt">📊 Gantt</a><a href="#cer">🗓️ Ceremonias</a><a href="#observaciones">🗒️ Observaciones</a><button id="calb" style="margin-left:auto">📅 Calendario</button></div></nav>
+<nav aria-label="Navegación principal"><div class="w"><a href="#rf">📋 Requerimientos</a><a href="#rnf">🛡️ Calidad</a><a href="#flujo">🔄 Flujo de atención</a><a href="#team">👥 Equipo y roles</a><a href="#gantt">📊 Gantt</a><a href="#cer">🗓️ Ceremonias</a><a href="#observaciones">🗒️ Observaciones</a><a href="#stakeholderValidation" id="stakeholderNav" hidden>✅ Validación stakeholder</a><button id="calb" style="margin-left:auto">📅 Calendario</button></div></nav>
 <main><div class="w">
 <div class="wkb" id="wkb"></div>
 <div class="cloud-state" id="cloudState" role="status" aria-live="polite">Conectando con la base de datos compartida…</div>
@@ -40,16 +40,21 @@
 <section id="team"><h2>Equipo: tareas por rol, mejoras y prioridades</h2>
 <div class="rule"><b>🎯 Regla de priorización del equipo</b> (aplica a todos, en este orden):<ol><li><b>Bloqueos</b>: lo que impide trabajar a otro compañero va primero.</li><li><b>Valor para Makro</b>: flujo núcleo registrar → reclamar → verificar → entregar (RF-10, RF-19 a RF-27).</li><li><b>Seguridad e integridad</b> (RF-01 a RF-06, RNF-03, RNF-04 y RNF-11) antes que lo estético.</li><li><b>Lo que vence esta semana</b> (Gantt) antes que lo adelantado.</li><li>Reportes, administración y pulido visual al final de cada sprint.</li></ol></div>
 <div class="tools"><button id="tmy">Mostrar solo mi rol</button></div><div class="tm" id="tm"></div></section>
-<section id="gantt"><h2>Diagrama de Gantt · Semanas 1 a 15</h2>
-<p class="section-intro">Cronograma depurado de 25 actividades: 24 actividades de trabajo entre las semanas 1 y 14, agrupadas en Sprint 0 y cinco sprints de producto, y una fila en la semana 15 para la ENTREGA FINAL a cargo de María, Product Owner. Cada actividad indica su semana.</p>
+<section id="gantt"><h2>Diagrama de Gantt · Preparación y cuatro sprints</h2>
+<p class="section-intro">Semanas 1–10: entrevistas, borradores, prototipos, arquitectura y preparación técnica. En la semana 10 se trasladan los datos de prueba y los componentes de backend y frontend desde Windows 10 a Ubuntu en la VPS. Semanas 11–14: cuatro sprints vinculados con los requerimientos funcionales; el Sprint 4 completa la implementación.</p>
 <div class="roles" id="roles"></div>
-<div class="tools gantt-tools" aria-label="Filtros y acciones del Gantt"><label for="gq">Buscar actividad</label><input type="search" id="gq" placeholder="Ej.: pruebas, entrega, RF-31"><label for="gRole">Rol</label><select id="gRole"><option value="all">Todos los roles</option><option value="po">Product Owner</option><option value="sm">Scrum Master</option><option value="fe">Front End</option><option value="be">Back End</option><option value="qa">Stakeholder · QA</option></select><label for="gState">Estado</label><select id="gState"><option value="all">Todos los estados</option><option value="pending">Por iniciar</option><option value="active">En curso</option><option value="late">Atrasada</option><option value="done">Cumplida</option><option value="no">No cumplida</option></select><button id="clearGantt" type="button">↻ Limpiar</button><button id="exportGantt" type="button">⬇ Exportar CSV</button><button id="printGantt" type="button">🖨 Imprimir</button></div><p id="ganttSummary" class="section-intro" aria-live="polite"></p>
+<div class="tools gantt-tools" aria-label="Filtros y acciones del Gantt"><label for="gq">Buscar actividad</label><input type="search" id="gq" placeholder="Ej.: Ubuntu, prototipo, Sprint 2"><label for="gRole">Rol</label><select id="gRole"><option value="all">Todos los roles</option><option value="po">Product Owner</option><option value="sm">Scrum Master</option><option value="fe">Front End</option><option value="be">Back End</option><option value="qa">Stakeholder · QA</option></select><label for="gState">Estado</label><select id="gState"><option value="all">Todos los estados</option><option value="pending">Por iniciar</option><option value="active">En curso</option><option value="late">Atrasada</option><option value="done">Cumplida</option><option value="no">No cumplida</option></select><button id="clearGantt" type="button">↻ Limpiar</button><button id="exportGantt" type="button">⬇ Exportar CSV</button><button id="printGantt" type="button">🖨 Imprimir</button></div><p id="ganttSummary" class="section-intro" aria-live="polite"></p>
 <div class="gwrap"><table class="g" id="gt"></table></div>
 <div class="lg" id="lg"></div></section>
 
 <section id="cer"><h2>Ceremonias, reuniones y evidencias</h2>
-<div class="drive"><input id="dl" type="url" placeholder="Pega aquí el enlace de la carpeta de Drive con las evidencias (capturas)"><button id="dgo">Abrir carpeta</button></div>
+<div class="drive"><input id="dl" type="url" placeholder="Pega aquí el enlace de la carpeta de Drive con las evidencias (capturas)" aria-label="Enlace a la carpeta de evidencias"><button id="dgo" type="button">Abrir carpeta</button></div><p id="driveStatus" class="drive-status" role="status" aria-live="polite"></p>
 <div class="gwrap"><table class="cer" id="ct"></table></div></section>
+
+<section id="stakeholderValidation" hidden><h2>✅ Validación semanal del stakeholder</h2>
+<p class="section-intro">Apartado privado de Patricia (Stakeholder · QA). Registra el resultado de cada semana, sus observaciones, enlaces de referencia y evidencias Word, Excel o PowerPoint. Los archivos y registros se guardan en Firebase y se sincronizan con su cuenta.</p>
+<p id="weeklyValidationStatus" role="status" aria-live="polite"></p><div id="weeklyValidationList" class="weekly-validation-list"></div>
+</section>
 
 <section id="observaciones"><h2>🗒️ Seguimiento de observaciones del equipo</h2>
 <p class="section-intro">El Product Owner asigna observaciones; el Developer responsable actualiza su respuesta y estado; el Scrum Master consulta el seguimiento. Los cambios se sincronizan en tiempo real. Solo el Product Owner puede eliminar observaciones; la eliminación masiva incluye únicamente las resueltas.</p>
@@ -83,5 +88,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js" defer></script>
 <script src="assets/js/firebase-config.js?v=makro-flow-3" defer></script>
-<script src="assets/js/app.js?v=observations-v1" defer></script></body></html>
+<script src="assets/js/app.js?v=sprints-validation-v1" defer></script></body></html>

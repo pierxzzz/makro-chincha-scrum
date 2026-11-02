@@ -152,3 +152,17 @@ button.pri{background:var(--pri);color:#fff;border-color:var(--pri)}
 .review-table input,.review-table select,.review-table textarea{width:100%}
 #reviewStatus,#observationStatus{min-height:1.5em}
 @media(max-width:650px){.observation-form{grid-template-columns:1fr}.observation-form .observation-text{grid-column:auto}.review-table{min-width:500px}}
+.drive-status{min-height:1.5em;margin:-6px 0 12px;color:var(--mu);font-size:12px}
+.weekly-validation-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:12px}
+.validation-week{display:grid;gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px}
+.validation-week>label{display:grid;gap:5px;font-size:13px;font-weight:700}
+.validation-week textarea{width:100%;resize:vertical;color:var(--tx)}
+.validation-week-heading,.validation-week-footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.validation-week-heading>b{color:var(--pri)}
+.validation-week-heading label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
+.validation-check{width:18px;height:18px;accent-color:var(--ok)}
+.validation-week-footer small{color:var(--mu);font-size:11px}
+.validation-files-list{font-size:12px}
+.validation-files-list ul{margin:5px 0;padding-left:22px}
+.file-link{padding:2px 6px;color:var(--pri);text-align:left}
+@media(max-width:520px){.validation-week-heading,.validation-week-footer{align-items:stretch;flex-direction:column}.validation-week-footer button{width:100%}}
