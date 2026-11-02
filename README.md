@@ -27,7 +27,7 @@ Para identificar realmente quién cambió cada check, cada integrante debe tener
 
 ## Publicación de la página
 
-El workflow `.github/workflows/pages.yml` publica los archivos estáticos en GitHub Pages al subir cambios a `main`, si está habilitada la opción **Settings → Pages → Source: GitHub Actions**. La URL de este proyecto es `https://pierxz10.github.io/proyectoscrum/`; confirma que el workflow termine correctamente y que Pages esté activado en la configuración del repositorio.
+El workflow `.github/workflows/pages.yml` publica los archivos estáticos en GitHub Pages al subir cambios a `main`, si está habilitada la opción **Settings → Pages → Source: GitHub Actions**. La URL de este proyecto es `https://pierxzzz.github.io/makro-chincha-scrum/`; verifica el estado del workflow de publicación en GitHub Actions.
 
 ## Estructura
 
