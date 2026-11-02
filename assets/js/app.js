@@ -34,14 +34,14 @@ const RF_GROUPS={"RF-01":"Autenticación, cuentas y permisos","RF-07":"Catálogo
 const RNF=[["RNF-01","La interfaz será clara, consistente e intuitiva para el personal autorizado."],["RNF-02","El sistema aplicará autenticación y autorización según el rol del usuario."],["RNF-03","El sistema impedirá duplicidades e inconsistencias en registros y estados."],["RNF-04","La solución permitirá crecer en usuarios, registros y futuras funcionalidades."],["RNF-05","El código será modular, organizado y documentado."],["RNF-06","Los errores no generarán registros incompletos ni pérdida de información."],["RNF-07","Los registros no se eliminarán físicamente; todas las tablas usarán eliminación lógica (0 = vigente, 1 = eliminado/desactivado)."],["RNF-08","Cada registro conservará el usuario y la fecha/hora de creación y última modificación."],["RNF-09","Las contraseñas se almacenarán con hash BCrypt; las sesiones usarán tokens con expiración y revocación; los datos personales serán visibles según permisos."],["RNF-10","La información se almacenará en MySQL 8.0.16 o superior (InnoDB, utf8mb4), con claves foráneas y restricciones únicas y de validación para las reglas del negocio."],["RNF-11","Aun con usuarios simultáneos, no se duplicarán códigos de objeto, números de constancia ni reclamaciones activas sobre un mismo objeto."]];
 const ROLES=[["po","Product Owner","Prioriza el Product Backlog y valida el valor de cada entrega."],["sm","Scrum Master","Facilita ceremonias, remueve impedimentos y vela por Scrum adaptativo."],["fe","Developer 1 · Front End","Diseña y desarrolla la interfaz gráfica del sistema web con enfoque en UI/UX."],["be","Developer 2 · Back End","Lógica, base de datos, seguridad, estados y auditoría."],["qa","Stakeholder · QA","Valida criterios de aceptación, pruebas y retroalimentación."]];
 const ACT=[
-["Semana 1 · Entrevistar al stakeholder y levantar el proceso actual","po",1,1],
+["Semana 1 · Entrevistar al personal de Atención al Cliente de Makro y levantar el proceso actual","po",1,1],
 ["Semana 1 · Acordar alcance, objetivos, roles y dinámica de trabajo","sm",1,1],
 ["Semana 2 · Redactar borradores de historias, reglas y criterios de aceptación","po",2,2],
 ["Semana 2 · Dibujar la arquitectura propuesta y el modelo inicial de datos","be",2,2],
 ["Semana 3 · Crear bocetos de navegación y pantallas principales","fe",3,3],
 ["Semana 3 · Comparar alternativas técnicas y documentar decisiones de arquitectura","be",3,3],
-["Semana 4 · Preparar prototipo navegable de interfaz en Angular con TypeScript","fe",4,4],
-["Semana 4 · Definir contratos API preliminares y diagrama de componentes","be",4,4],
+["Semana 4 · Elaborar diagramas UML de casos de uso y actividades","po",4,4],
+["Semana 4 · Elaborar diagramas UML de clases y componentes","be",4,4],
 ["Semana 5 · Revisar el prototipo con el stakeholder y registrar ajustes","qa",5,5],
 ["Semana 5 · Refinar historias, prioridades y criterios de aceptación","po",5,5],
 ["Semana 6 · Construir componentes visuales de prueba y guía de estilos","fe",6,6],
@@ -52,10 +52,10 @@ const ACT=[
 ["Semana 8 · Conectar el prototipo de Angular con datos de prueba","fe",8,8],
 ["Semana 9 · Revisar los borradores técnicos, pruebas iniciales y riesgos","qa",9,9],
 ["Semana 9 · Preparar respaldos, inventario de datos de prueba y plan de migración","sm",9,9],
-["Semana 10 · Migrar datos de prueba y servicios Spring Boot desde Windows 10 a Ubuntu en la VPS","be",10,10],
-["Semana 10 · Compilar y desplegar Angular en Ubuntu; verificar rutas y conexión con el backend","fe",10,10],
-["Semana 10 · Validar respaldos, integridad de datos y acceso al entorno Ubuntu","qa",10,10],
-["Semana 10 · Confirmar arquitectura, accesos y checklist de arranque de los sprints","sm",10,10],
+["Semana 10 · Migrar datos de prueba y servicios Spring Boot desde Windows 10 a Ubuntu","be",10,10],
+["","fe",10,10,false],
+["","qa",10,10,false],
+["","sm",10,10,false],
 ["Semana 11 · Sprint 1: implementar acceso, cuentas y permisos (RF-01 a RF-06)","be",11,11],
 ["Semana 11 · Sprint 1: integrar pantallas de acceso y administración de usuarios","fe",11,11],
 ["Semana 11 · Sprint 1: probar aceptación, roles y recuperación de acceso","qa",11,11],
@@ -72,7 +72,8 @@ const ACT=[
 ["Semana 14 · Sprint 4: cerrar interfaces, exportación y presentación final","fe",14,14],
 ["Semana 14 · Sprint 4: ejecutar regresión, validar evidencias y confirmar calidad","qa",14,14],
 ["Semana 14 · Sprint 4: aceptar la implementación completa y acordar seguimiento final","po",14,14],
-["Semana 14 · Sprint 4: consolidar retrospectiva, pendientes y cierre del equipo","sm",14,14]
+["Semana 14 · Sprint 4: consolidar retrospectiva, pendientes y cierre del equipo","sm",14,14],
+["Semana 15 · Entrega final del proyecto","team",15,15]
 ];
 const TEAM={
 po:{p:"María",q:["Visión de negocio","Comunicación con Makro","Toma de decisiones","Criterio de valor"],
@@ -140,32 +141,33 @@ function normalizeText(value){return value.toLocaleLowerCase("es-PE").normalize(
 function activityStatus(activity,index,cw){const x=st["g"+index];if(x&&x.v==1)return{key:"done",label:"Cumplida",className:"ok"};
 if(x&&x.v==0)return{key:"no",label:"No cumplida",className:"no"};if(activity[3]<cw)return{key:"late",label:"Atrasada",className:"no"};
 if(activity[2]<=cw)return{key:"active",label:"En curso",className:"wip"};return{key:"pending",label:"Por iniciar",className:""}}
+function activityResponsible(activity){return activity[1]==="team"?"Todo el equipo · cualquier integrante puede marcarla":`👤 ${TEAM[activity[1]].p} · ${ROLES.find(r=>r[0]===activity[1])[1]}`}
 function filteredActivityIndices(cw){const role=$("gRole").value,state=$("gState").value,query=normalizeText($("gq").value.trim());
-return ACT.map((activity,index)=>index).filter(index=>{const activity=ACT[index],status=activityStatus(activity,index,cw),roleName=ROLES.find(r=>r[0]===activity[1])[1];
-const text=normalizeText(`${activity[0]} ${TEAM[activity[1]].p} ${roleName}`);
+return ACT.map((activity,index)=>index).filter(index=>{const activity=ACT[index];if(activity[4]===false)return false;const status=activityStatus(activity,index,cw),responsible=activityResponsible(activity);
+const text=normalizeText(`${activity[0]} ${responsible}`);
 return(role==="all"||activity[1]===role)&&(state==="all"||status.key===state)&&(!query||text.includes(query))}).sort((left,right)=>ACT[left][2]-ACT[right][2]||ACT[left][3]-ACT[right][3]||left-right)}
 function ganttHtml(){const cw=curW(),indices=filteredActivityIndices(cw);let h="<tr><th>Cumple</th><th class='l'>Actividad y responsable</th>";
-for(let w=1;w<=14;w++)h+=`<th class="${w==cw?"cur":""}">S${w}<br><small>${sd(wd(w))}</small></th>`;h+="<th>Estado</th></tr>";
+for(let w=1;w<=15;w++)h+=`<th class="${w==cw?"cur":""}">S${w}<br><small>${sd(wd(w))}</small></th>`;h+="<th>Estado</th></tr>";
 indices.forEach(i=>{const a=ACT[i],k="g"+i,status=activityStatus(a,i,cw);
-h+=`<tr class="${status.key==="done"?"done-row":""}"><td>${sg(k)}</td><td class="n">${a[0]}<small class="ow">👤 ${TEAM[a[1]].p} · ${ROLES.find(r=>r[0]===a[1])[1]}</small><small class="ts">${tsl(k)}</small></td>`;
-for(let w=1;w<=14;w++){const on=w>=a[2]&&w<=a[3];h+=`<td class="${w==cw?"cur":""}"><div class="cell ${on?"on":""}" style="${on?`background:var(--${a[1]});opacity:${w<=cw?1:.4}`:""}"></div></td>`}
+h+=`<tr class="${status.key==="done"?"done-row":""}"><td>${sg(k)}</td><td class="n">${a[0]}<small class="ow">${activityResponsible(a)}</small><small class="ts">${tsl(k)}</small></td>`;
+for(let w=1;w<=15;w++){const on=w>=a[2]&&w<=a[3];h+=`<td class="${w==cw?"cur":""}"><div class="cell ${on?"on":""}" style="${on?`background:var(--${a[1]==="team"?"pri":a[1]});opacity:${w<=cw?1:.4}`:""}"></div></td>`}
 h+=`<td><span class="chip ${status.className}">${status.label}</span></td></tr>`});
-if(!indices.length)h+='<tr><td colspan="17" class="empty-state">No hay actividades que coincidan con estos filtros.</td></tr>';
-$("gt").innerHTML=h;$("ganttSummary").textContent=`Semanas 1–10: preparación · semanas 11–14: cuatro sprints · ${ACT.filter((a,i)=>ok("g"+i)).length} de ${ACT.length} actividades completadas.`}
+if(!indices.length)h+='<tr><td colspan="18" class="empty-state">No hay actividades que coincidan con estos filtros.</td></tr>';
+$("gt").innerHTML=h;$("ganttSummary").textContent=`Semanas 1–10: preparación · semanas 11–14: cuatro sprints · semana 15: entrega final · ${ACT.filter((a,i)=>a[4]!==false&&ok("g"+i)).length} de ${ACT.filter(a=>a[4]!==false).length} actividades completadas.`}
 function exportGanttCsv(){const cw=curW(),indices=filteredActivityIndices(cw),escape=value=>`"${String(value).replace(/"/g,'""')}"`;
 const rows=[["Actividad","Responsable","Rol","Semana inicial","Semana final","Estado","Fecha/hora del último cambio"]];
-indices.forEach(index=>{const activity=ACT[index],status=activityStatus(activity,index,cw);rows.push([activity[0],TEAM[activity[1]].p,ROLES.find(r=>r[0]===activity[1])[1],activity[2],activity[3],status.label,recordTime(st["g"+index])])});
+indices.forEach(index=>{const activity=ACT[index],status=activityStatus(activity,index,cw),role=activity[1]==="team"?"Todo el equipo":ROLES.find(r=>r[0]===activity[1])[1];rows.push([activity[0],activity[1]==="team"?"Todo el equipo":TEAM[activity[1]].p,role,activity[2],activity[3],status.label,recordTime(st["g"+index])])});
 const blob=new Blob(["\uFEFF"+rows.map(row=>row.map(escape).join(";")).join("\r\n")],{type:"text/csv;charset=utf-8"});
 const url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download="makro-chincha-gantt-2026.csv";document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-function rolesHtml(){const cw=curW();$("roles").innerHTML=ROLES.map(r=>{const A=ACT.map((a,i)=>[a,i]).filter(x=>x[0][1]==r[0]);const due=A.filter(x=>x[0][3]<cw).length,done=A.filter(x=>ok("g"+x[1])).length;
+function rolesHtml(){const cw=curW();$("roles").innerHTML=ROLES.map(r=>{const A=ACT.map((a,i)=>[a,i]).filter(x=>x[0][4]!==false&&(x[0][1]===r[0]||x[0][1]==="team"));const due=A.filter(x=>x[0][3]<cw).length,done=A.filter(x=>ok("g"+x[1])).length;
 return `<div class="role" style="border-top-color:var(--${r[0]})"><b>${r[1]}</b>${r[2]}<small>Debían estar listas: ${due} · Cumplidas: ${done}/${A.length}</small></div>`}).join("")}
 function cerHtml(){const cw=curW();let h="<tr><th>Semana</th><th>Fase</th>"+CC.map(c=>`<th>${c[1]}</th>`).join("")+"</tr>";
 for(let w=1;w<=14;w++)h+=`<tr class="${w==cw?"cur":""}"><td><b>Semana ${w}</b><small class="ts">${sd(wd(w))} – ${sd(wd(w)+6*DAY)}</small></td><td class="ph">${ph(w)}</td>`+CC.map(c=>{const k="c"+w+c[0];return `<td>${sg(k)}<small class="ts">${tsl(k)}</small></td>`}).join("")+"</tr>";
-h+=`<tr class="${cw>=15?"cur":""}"><td><b>Semana 15</b><small class="ts">Lun 30 nov</small></td><td class="ph" colspan="5">ENTREGA FINAL del producto · María (Product Owner)</td></tr>`;$("ct").innerHTML=h}
+h+=`<tr class="${cw>=15?"cur":""}"><td><b>Semana 15</b><small class="ts">Lun 30 nov</small></td><td class="ph" colspan="5">ENTREGA FINAL del producto · cualquier integrante puede marcarla en el Gantt</td></tr>`;$("ct").innerHTML=h}
 function stats(){const cnt=ks=>[ks.filter(ok).length,ks.filter(k=>st[k]&&st[k].v==0).length,ks.length];
 const card=(t,[a,b,n])=>`<div class="st"><small>${t}</small><b>${a}/${n}</b> <small style="display:inline">(${Math.round(a/n*100)}% · ✗ ${b})</small><div class="bar"><i style="width:${a/n*100}%"></i></div></div>`;
 const cer=[];for(let w=1;w<=14;w++)CC.forEach(c=>cer.push("c"+w+c[0]));
-$("stats").innerHTML=card("Funcionales",cnt(RF.map(r=>reqMarkKey("rf",r.id))))+card("No funcionales",cnt(RNF.map(r=>reqMarkKey("rnf",r[0]))))+card("Actividades Gantt",cnt(ACT.map((a,i)=>"g"+i)))+card("Ceremonias y evidencias",cnt(cer))+card("Tareas y mejoras por rol",cnt(Object.keys(TEAM).flatMap(r=>["t","m"].flatMap(p=>TEAM[r][p].map((_,i)=>p+"_"+r+"_"+i)))))}
+$("stats").innerHTML=card("Funcionales",cnt(RF.map(r=>reqMarkKey("rf",r.id))))+card("No funcionales",cnt(RNF.map(r=>reqMarkKey("rnf",r[0]))))+card("Actividades Gantt",cnt(ACT.flatMap((a,i)=>a[4]===false?[]:["g"+i])))+card("Ceremonias y evidencias",cnt(cer))+card("Tareas y mejoras por rol",cnt(Object.keys(TEAM).flatMap(r=>["t","m"].flatMap(p=>TEAM[r][p].map((_,i)=>p+"_"+r+"_"+i)))))}
 function banner(){const cw=curW(),m=myAtt();
 $("wkb").innerHTML=`<div><small>Hora exacta (Lima)</small><b id="ck"></b></div><div><small>Ingresaste a esta página</small><b>${fmtS(ENTRY)}</b></div><div><small>Semana del proyecto</small><b>${cw==0?"Inicia el 24 ago":cw>15?"Plazo concluido":`${cw} de 15`+(cw<=15?` · ${sd(wd(cw))} – ${sd(wd(cw)+6*DAY)}`:"")}</b></div><div><small>Entrega final · lunes 30 nov 2026</small><b id="cd"></b></div><div><small>Mi asistencia de hoy</small>${m?`<b class="good">✓ ${m.p} · ${m.t}</b><small>${m.r}</small>`:`<button class="pri" id="atb">☑ Marcar asistencia${who?` · ${who}`:""}</button>`}<small><a href="#" id="chg">${who?"Cambiar persona":"Ingresar"}</a></small></div><div><small>Datos</small><b>🟠 Pestañas de este navegador</b></div>`;tick()}
 function tick(){const a=$("ck"),c=$("cd");if(a)a.textContent=fmtS(new Date());if(!c)return;const d=DEAD-limaNow().getTime();
@@ -330,7 +332,7 @@ finally{$("saveReview").disabled=false}}
 function teamHtml(){const rid=(WHO.find(w=>w[0]==who)||[])[1],mine=ROLES.find(r=>r[1]==rid);
 const list=(r,pre,arr)=>arr.map((t,i)=>{const k=pre+"_"+r+"_"+i,x=st[k];return `<label class="tk ${x&&x.v?"d":""}"><input type="checkbox" data-tk="${k}" ${x&&x.v?"checked":""}><span>${t}<small>${x?"✓ "+x.t+by(x):""}</small></span></label>`}).join("");
 $("tm").innerHTML=ROLES.filter(r=>!onlyMe||!mine||r[0]==mine[0]).map(r=>{const T=TEAM[r[0]],n=T.t.length+T.m.length,d=T.t.filter((_,i)=>ok("t_"+r[0]+"_"+i)).length+T.m.filter((_,i)=>ok("m_"+r[0]+"_"+i)).length;
-const A=ACT.map((a,i)=>[a,i]).filter(x=>x[0][1]==r[0]);
+const A=ACT.map((a,i)=>[a,i]).filter(x=>x[0][4]!==false&&(x[0][1]===r[0]||x[0][1]==="team"));
 return `<div class="tc ${mine&&mine[0]==r[0]?"me":""}" style="border-top-color:var(--${r[0]})"><h3>${T.p} · ${r[1]}</h3><div class="who">${r[2]}</div><div class="bar"><i style="width:${d/n*100}%"></i></div><small class="ts">${d}/${n} tareas y mejoras cumplidas</small>
 <h4>Cualidades que aporta</h4><div class="qs">${T.q.map(q=>`<span>${q}</span>`).join("")}</div>
 <h4>Tareas que asume</h4>${list(r[0],"t",T.t)}
