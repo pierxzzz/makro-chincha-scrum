@@ -9,7 +9,7 @@ rules_version = '2';
 // asist/{YYYY-MM-DD_u0..u4}: d, p, r, t, at, uid, createdAt (timestamp).
 // observaciones/{id}: PO-authored feedback; the assigned Developer may update response/status.
 // Only the Product Owner may permanently delete observations.
-// validacionesSemanales/{week-01..week-14}: stakeholder-only weekly validation and evidence metadata.
+// validacionesSemanales/{week-01..week-15}: stakeholder-authored shared test results.
 // evaluaciones/final-review: Scrum Master-only project evaluation.
 // ===============================================================
 
@@ -111,25 +111,24 @@ service cloud.firestore {
     }
 
     function validWeeklyValidation(weekId) {
-      return weekId.matches('^week-(0[1-9]|1[0-4])$')
+      return weekId.matches('^week-(0[1-9]|1[0-5])$')
         && request.resource.data.keys().hasAll([
-          'week', 'validated', 'observation', 'evidenceLinks', 'files',
+          'week', 'validated', 'testSummary', 'observation',
           'updatedBy', 'updatedUid', 'updatedAt'
         ])
         && request.resource.data.keys().hasOnly([
-          'week', 'validated', 'observation', 'evidenceLinks', 'files',
+          'week', 'validated', 'testSummary', 'observation',
           'updatedBy', 'updatedUid', 'updatedAt'
         ])
         && request.resource.data.week is int
         && request.resource.data.week >= 1
-        && request.resource.data.week <= 14
+        && request.resource.data.week <= 15
         && request.resource.data.validated is bool
+        && request.resource.data.testSummary is string
+        && request.resource.data.testSummary.size() > 0
+        && request.resource.data.testSummary.size() <= 2000
         && request.resource.data.observation is string
         && request.resource.data.observation.size() <= 1000
-        && request.resource.data.evidenceLinks is list
-        && request.resource.data.evidenceLinks.size() <= 10
-        && request.resource.data.files is list
-        && request.resource.data.files.size() <= 10
         && request.resource.data.updatedBy == member().name
         && member().role == 'qa'
         && request.resource.data.updatedUid == request.auth.uid
@@ -225,7 +224,7 @@ service cloud.firestore {
     }
 
     match /validacionesSemanales/{weekId} {
-      allow read: if isActiveMember() && member().role == 'qa';
+      allow read: if isActiveMember();
       allow create, update: if isActiveMember()
         && member().role == 'qa'
         && validWeeklyValidation(weekId);

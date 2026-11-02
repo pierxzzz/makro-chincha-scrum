@@ -162,7 +162,9 @@ button.pri{background:var(--pri);color:#fff;border-color:var(--pri)}
 .validation-week-heading label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
 .validation-check{width:18px;height:18px;accent-color:var(--ok)}
 .validation-week-footer small{color:var(--mu);font-size:11px}
-.validation-files-list{font-size:12px}
-.validation-files-list ul{margin:5px 0;padding-left:22px}
-.file-link{padding:2px 6px;color:var(--pri);text-align:left}
+.validation-week>p{margin:0;line-height:1.55;font-size:13px;overflow-wrap:anywhere}
+.validation-updated{color:var(--mu);font-size:11px}
+.validation-result{display:inline-flex;align-items:center;border-radius:20px;padding:4px 9px;background:var(--bd);font-size:12px;font-weight:700}
+.validation-result.approved{background:color-mix(in srgb,var(--ok) 16%,var(--card));color:var(--ok)}
+.validation-approved{border-color:var(--ok)}
 @media(max-width:520px){.validation-week-heading,.validation-week-footer{align-items:stretch;flex-direction:column}.validation-week-footer button{width:100%}}

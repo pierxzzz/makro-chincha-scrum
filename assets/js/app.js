@@ -121,7 +121,7 @@ const REVIEW_ID="final-review",RESET_ID="project-gantt-checks-reset-2026-11";
 const REVIEW_FIELDS={approval:"Pendiente",grade:"",teacherNote:"",nextAction:""};
 const RF_PRIORITY=RF.map(r=>r.id);
 let st={},att={},observations=[],review={...REVIEW_FIELDS},mode="sin-sesion",sel=today(),cm=Number(today().slice(5,7))-1,cy=Number(today().slice(0,4)),onlyP=false,prompted=false,onlyMe=false,deletingResolvedObservations=false;
-let weeklyValidations={},weeklyValidationUnsub=null,storage=null;
+let weeklyValidations={},weeklyValidationUnsub=null;
 const ENTRY=new Date(),L=k=>{try{return JSON.parse(localStorage.getItem(k))||{}}catch(e){console.error(`No se pudo leer ${k} del almacenamiento local.`,e);return {}}},SV=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){console.error(`No se pudo guardar ${k} en el almacenamiento local.`,e);return false}};
 const by=x=>x&&x.by?" · "+x.by:"";
 const ok=k=>st[k]&&st[k].v==1,WHO=[["Piero","Scrum Master"],["María","Product Owner"],["Airton","Developer 1 · Front End"],["Dayron","Developer 2 · Back End"],["Patricia","Stakeholder · QA"]],ROLE_CODES=["sm","po","fe","be","qa"],ACCESS_PINS={Piero:"48216",María:"73105",Airton:"29047",Dayron:"86423",Patricia:"51698"},wid=()=>{const i=WHO.findIndex(x=>x[0]==who);return i<0?null:today()+"_u"+i},myAtt=()=>wid()?att[wid()]:null;let who="",auth=null,db=null,currentUid="",cloudReady=false,marksUnsub=null,attendanceUnsub=null,observationsUnsub=null,reviewUnsub=null;
@@ -240,60 +240,34 @@ $("observationStatus").textContent=`Se eliminaron ${deleted} observación(es) re
 }catch(error){console.error("No se pudieron eliminar todas las observaciones resueltas.",error);const progress=deleted?` Se eliminaron ${deleted} antes del error; vuelve a intentarlo para las restantes.`:"";setCloudStatus(`No se completó la eliminación masiva: ${error.message}.${progress}`,true)}
 finally{deletingResolvedObservations=false;renderObservations()}}
 function renderStakeholderValidation(force=false){
-const visible=memberRole()==="qa";
-$("stakeholderNav").hidden=!visible;$("stakeholderValidation").hidden=!visible;
-if(!visible)return;
+const signedIn=Boolean(who),canEdit=memberRole()==="qa";
+$("stakeholderNav").hidden=!signedIn;$("stakeholderValidation").hidden=!signedIn;
+if(!signedIn)return;
 const container=$("weeklyValidationList");
-if(!cloudReady){container.innerHTML='<p class="empty-state">Conéctate a Firestore para registrar las validaciones semanales.</p>';container.dataset.loaded="";return}
+if(!cloudReady){container.innerHTML='<p class="empty-state">Conéctate a Firestore para consultar las validaciones semanales del equipo.</p>';container.dataset.loaded="";return}
 if(!force&&container.dataset.loaded==="true")return;
 container.dataset.loaded="true";
-container.innerHTML=Array.from({length:14},(_,index)=>{
-const week=index+1,id=`week-${String(week).padStart(2,"0")}`,data=weeklyValidations[id]||{},files=Array.isArray(data.files)?data.files:[];
-const links=Array.isArray(data.evidenceLinks)?data.evidenceLinks:[];
-return `<form class="validation-week" data-validation-week="${week}"><div class="validation-week-heading"><b>Semana ${week} · ${escapeHtml(ph(week))}</b><label><input class="validation-check" type="checkbox" ${data.validated===true?"checked":""}> Semana validada</label></div><label>Observación<textarea class="validation-observation" maxlength="1000" rows="3" placeholder="Anota resultados, hallazgos o pendientes de esta semana.">${escapeHtml(data.observation||"")}</textarea></label><label>Enlaces de referencia<textarea class="validation-links" rows="2" placeholder="Pega enlaces HTTPS (uno por línea), por ejemplo la carpeta de evidencias.">${escapeHtml(links.join("\n"))}</textarea></label><label>Archivos de evidencia (Word, Excel o PowerPoint · máx. 10 MB por archivo)<input class="validation-files" type="file" multiple accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx" ${window.FIREBASE_STORAGE_READY&&storage?"":"disabled"}></label>${!window.FIREBASE_STORAGE_READY?'<small class="storage-notice">La subida directa de archivos requiere habilitar Cloud Storage y una cuenta de facturación en el plan Blaze. Puedes guardar enlaces y observaciones en Firestore mientras tanto.</small>':""}${files.length?`<div class="validation-files-list"><b>Archivos guardados</b><ul>${files.map(file=>`<li><button type="button" class="file-link" data-validation-file="${escapeHtml(file.path)}">${escapeHtml(file.name)}</button> · ${Math.ceil(file.size/1024)} KB</li>`).join("")}</ul></div>`:""}<div class="validation-week-footer"><small>${data.updatedBy?`Actualizado por ${escapeHtml(data.updatedBy)} · ${escapeHtml(recordTime(data))}`:"Sin validación registrada"}</small><button class="pri" type="submit" ${!cloudReady?"disabled":""}>Guardar semana ${week}</button></div></form>`
+container.innerHTML=Array.from({length:15},(_,index)=>{
+const week=index+1,id=`week-${String(week).padStart(2,"0")}`,data=weeklyValidations[id]||{},updated=data.updatedBy?`Actualizado por ${escapeHtml(data.updatedBy)} · ${escapeHtml(recordTime(data))}`:"Aún no registrada";
+if(!canEdit)return `<article class="validation-week ${data.validated===true?"validation-approved":""}"><div class="validation-week-heading"><b>Semana ${week} · ${escapeHtml(ph(week))}</b><span class="validation-result ${data.validated===true?"approved":""}">${data.validated===true?"✓ Validada":"Pendiente"}</span></div><p><b>Pruebas realizadas y resultados</b><br>${data.testSummary?escapeHtml(data.testSummary):"La stakeholder aún no registra las pruebas de esta semana."}</p><p><b>Observaciones y seguimiento</b><br>${data.observation?escapeHtml(data.observation):"Sin observaciones registradas."}</p><small class="validation-updated">${updated}</small></article>`;
+return `<form class="validation-week" data-validation-week="${week}"><div class="validation-week-heading"><b>Semana ${week} · ${escapeHtml(ph(week))}</b><label><input class="validation-check" type="checkbox" ${data.validated===true?"checked":""}> Pruebas validadas</label></div><label>Pruebas realizadas y resultados<textarea class="validation-tests" maxlength="2000" rows="4" placeholder="Describe qué se probó, el resultado obtenido y si pasó correctamente.">${escapeHtml(data.testSummary||"")}</textarea></label><label>Observaciones y seguimiento<textarea class="validation-observation" maxlength="1000" rows="3" placeholder="Anota hallazgos, pendientes o acciones acordadas.">${escapeHtml(data.observation||"")}</textarea></label><div class="validation-week-footer"><small>${updated}</small><button class="pri" type="submit" ${!cloudReady?"disabled":""}>Guardar semana ${week}</button></div></form>`
 }).join("");
-}
-function validationFileType(file){
-const extension=file.name.toLowerCase().split(".").pop(),types={doc:"application/msword",docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",xls:"application/vnd.ms-excel",xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",ppt:"application/vnd.ms-powerpoint",pptx:"application/vnd.openxmlformats-officedocument.presentationml.presentation"};
-return types[extension]||"";
 }
 async function saveWeeklyValidation(event){
 event.preventDefault();
 const form=event.currentTarget,week=Number(form.dataset.validationWeek),weekId=`week-${String(week).padStart(2,"0")}`,status=$("weeklyValidationStatus");
 if(memberRole()!=="qa"){status.textContent="Solo el stakeholder puede guardar validaciones semanales.";return}
 if(!cloudReady||!currentUid){status.textContent="La conexión a Firestore no está disponible; no se guardaron los cambios.";return}
-const observation=form.querySelector(".validation-observation").value.trim(),linkText=form.querySelector(".validation-links").value.trim(),files=Array.from(form.querySelector(".validation-files").files||[]);
-const links=linkText?linkText.split(/\r?\n/).map(value=>value.trim()).filter(Boolean):[];
-if(!Number.isInteger(week)||week<1||week>14||observation.length>1000||links.length>10||files.length>10){status.textContent="Revisa los datos: observación máx. 1000 caracteres, hasta 10 enlaces y 10 archivos por semana.";return}
-if(files.length&&(!storage||!window.FIREBASE_STORAGE_READY)){status.textContent="La subida directa de archivos requiere habilitar Cloud Storage con una cuenta de facturación.";return}
-const cleanLinks=[];
-for(const value of links){try{const url=new URL(value);if(!["https:","http:"].includes(url.protocol))throw new Error();cleanLinks.push(url.href)}catch{status.textContent=`El enlace no es válido: ${value}`;return}}
-const existing=weeklyValidations[weekId]?.files||[];
-if(existing.length+files.length>10){status.textContent="Se permiten como máximo 10 archivos por semana.";return}
-for(const file of files){if(!validationFileType(file)||file.size>10*1024*1024){status.textContent=`${file.name}: usa Word, Excel o PowerPoint de hasta 10 MB.`;return}}
-const button=form.querySelector('button[type="submit"]');button.disabled=true;status.textContent=`Subiendo evidencias de la semana ${week}…`;
-const uploaded=[];
+const testSummary=form.querySelector(".validation-tests").value.trim(),observation=form.querySelector(".validation-observation").value.trim();
+if(!Number.isInteger(week)||week<1||week>15||!testSummary||testSummary.length>2000||observation.length>1000){status.textContent="Describe las pruebas realizadas (máx. 2000 caracteres) y revisa las observaciones (máx. 1000).";return}
+const button=form.querySelector('button[type="submit"]');button.disabled=true;status.textContent=`Guardando la validación de la semana ${week}…`;
 try{
-for(const file of files){
-const contentType=validationFileType(file),safeName=file.name.replace(/[^\w.-]/g,"_"),path=`validaciones/${currentUid}/semana-${week}/${Date.now()}-${uploaded.length}-${safeName}`;
-await storage.ref(path).put(file,{contentType,customMetadata:{uploadedBy:currentUid}});
-uploaded.push({name:file.name,path,size:file.size,contentType});
-}
-await db.collection("validacionesSemanales").doc(weekId).set({week,validated:form.querySelector(".validation-check").checked,observation,evidenceLinks:cleanLinks,files:[...existing,...uploaded],updatedBy:who,updatedUid:currentUid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
-form.querySelector(".validation-files").value="";
+await db.collection("validacionesSemanales").doc(weekId).set({week,validated:form.querySelector(".validation-check").checked,testSummary,observation,updatedBy:who,updatedUid:currentUid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
 status.textContent=`Validación de la semana ${week} guardada y sincronizada.`;
 }catch(error){
-const cleanupErrors=[];
-for(const file of uploaded){try{await storage.ref(file.path).delete()}catch(cleanupError){console.error("No se pudo limpiar un archivo de evidencia tras fallar el guardado.",cleanupError);cleanupErrors.push(cleanupError.message)}}
 console.error("No se pudo guardar la validación semanal.",error);
-status.textContent=`No se guardó la validación de la semana ${week}: ${error.message}${cleanupErrors.length?` No se pudieron limpiar ${cleanupErrors.length} archivo(s) subido(s).`:""}`;
+status.textContent=`No se guardó la validación de la semana ${week}: ${error.message}`;
 }finally{button.disabled=false}
-}
-function downloadValidationFile(path){
-if(memberRole()!=="qa"||!cloudReady||!storage){$("weeklyValidationStatus").textContent="No tienes permiso o no hay conexión para abrir esta evidencia.";return}
-const popup=window.open("about:blank","_blank");
-if(!popup){$("weeklyValidationStatus").textContent="Permite las ventanas emergentes para abrir la evidencia.";return}
-storage.ref(path).getDownloadURL().then(url=>{popup.location=url}).catch(error=>{popup.close();console.error("No se pudo abrir la evidencia almacenada.",error);$("weeklyValidationStatus").textContent=`No se pudo abrir el archivo: ${error.message}`})
 }
 function populateReview(){const form=review;$("reviewApproval").value=form.approval||"Pendiente";$("reviewGrade").value=form.grade||"";$("reviewTeacherNote").value=form.teacherNote||"";$("reviewNextAction").value=form.nextAction||"";$("reviewUpdated").textContent=form.updatedBy?`Última actualización: ${form.updatedBy} · ${recordTime(form)}`:"Sin evaluación registrada."}
 function renderReview(){const visible=memberRole()==="sm";$("teacherReview").hidden=!visible;$("saveReview").disabled=!cloudReady||!visible}
@@ -350,7 +324,7 @@ if(end===docs.length)batch.set(marker,{version:4,uid:currentUid,resetAt:firebase
 catch(error){const existing=await marker.get();if(existing.exists)return;throw error}}
 function stopCloudSubscriptions(){if(marksUnsub)marksUnsub();if(attendanceUnsub)attendanceUnsub();if(observationsUnsub)observationsUnsub();if(reviewUnsub)reviewUnsub();if(weeklyValidationUnsub)weeklyValidationUnsub();
 marksUnsub=null;attendanceUnsub=null;observationsUnsub=null;reviewUnsub=null;weeklyValidationUnsub=null}
-function subscribeCloudData(){stopCloudSubscriptions();cloudReady=false;let marksReady=false,attendanceReady=false,observationsReady=false,reviewReady=memberRole()!=="sm",weeklyValidationReady=memberRole()!=="qa";const uid=currentUid;
+function subscribeCloudData(){stopCloudSubscriptions();cloudReady=false;let marksReady=false,attendanceReady=false,observationsReady=false,reviewReady=memberRole()!=="sm",weeklyValidationReady=false;const uid=currentUid;
 setCloudStatus("Preparando el reinicio único de checks y cargando la información compartida…");
 const ready=()=>{if(!marksReady||!attendanceReady||!observationsReady||!reviewReady||!weeklyValidationReady)return;cloudReady=true;setCloudStatus(`Conectado a Firestore · ${who} · cambios sincronizados en tiempo real.`);render()};
 const failed=(label,error)=>{cloudReady=false;console.error(label,error);setCloudStatus(`${label}: ${error.message}`,true);render()};
@@ -358,8 +332,7 @@ attendanceUnsub=db.collection("asist").onSnapshot(snapshot=>{att={};snapshot.for
 observationsUnsub=db.collection("observaciones").orderBy("createdAt","desc").onSnapshot(snapshot=>{observations=snapshot.docs.map(doc=>({id:doc.id,...doc.data()}));observationsReady=true;render();ready()},error=>failed("No se pudieron leer las observaciones",error));
 if(memberRole()==="sm")reviewUnsub=db.collection("evaluaciones").doc(REVIEW_ID).onSnapshot(snapshot=>{review=snapshot.exists?{...REVIEW_FIELDS,...snapshot.data()}:{...REVIEW_FIELDS};populateReview();reviewReady=true;render();ready()},error=>failed("No se pudo leer la evaluación docente",error));
 else review={...REVIEW_FIELDS};
-if(memberRole()==="qa")weeklyValidationUnsub=db.collection("validacionesSemanales").onSnapshot(snapshot=>{weeklyValidations={};snapshot.forEach(doc=>{weeklyValidations[doc.id]=doc.data()});weeklyValidationReady=true;renderStakeholderValidation(true);ready()},error=>failed("No se pudieron leer las validaciones semanales",error));
-else weeklyValidations={};
+weeklyValidationUnsub=db.collection("validacionesSemanales").onSnapshot(snapshot=>{weeklyValidations={};snapshot.forEach(doc=>{weeklyValidations[doc.id]=doc.data()});weeklyValidationReady=true;renderStakeholderValidation(true);ready()},error=>failed("No se pudieron leer las validaciones semanales",error));
 ensureProjectChecksReset().then(()=>{if(currentUid!==uid)return;marksUnsub=db.collection("marks").onSnapshot(snapshot=>{st={};snapshot.forEach(doc=>{st[doc.id]=doc.data()});marksReady=true;render();ready()},error=>failed("No se pudieron leer los checks en la nube",error))})
 .catch(error=>failed("No se pudieron reiniciar las marcas de avance sin alterar las asistencias",error))}
 function activateCloudRole(name,user){const person=WHO.find(entry=>entry[0]===name);if(!person)throw new Error("El integrante seleccionado no existe.");
@@ -384,14 +357,13 @@ currentUid=user.uid;db.collection("members").doc(user.uid).get().then(snapshot=>
 const member=snapshot.data();if(member.active!==true||!WHO.some((person,i)=>person[0]===member.name&&person[1]===member.displayRole&&ROLE_CODES[i]===member.role))throw new Error("El perfil guardado en la nube no coincide con los integrantes habilitados.");
 activateCloudRole(member.name,user)}).catch(error=>{mode="error";cloudReady=false;setCloudStatus(`No se pudo validar el perfil en Firestore: ${error.message}`,true);console.error("No se pudo validar el perfil de Firestore.",error);render();maybePrompt()})}
 function startCloudMode(){render();if(!window.firebase||!window.FIREBASE_CONFIG){mode="error";setCloudStatus("No está disponible el SDK o la configuración de Firebase. No se guardarán cambios.",true);maybePrompt();return}
-try{if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);auth=firebase.auth();db=firebase.firestore();try{storage=firebase.storage()}catch(storageError){storage=null;console.error("Firebase Storage no está disponible para subir evidencias.",storageError)}auth.onAuthStateChanged(handleAuthState,error=>{mode="error";cloudReady=false;setCloudStatus(`Error de autenticación de Firebase: ${error.message}`,true);console.error("Falló Firebase Authentication.",error);maybePrompt()})}
+try{if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);auth=firebase.auth();db=firebase.firestore();auth.onAuthStateChanged(handleAuthState,error=>{mode="error";cloudReady=false;setCloudStatus(`Error de autenticación de Firebase: ${error.message}`,true);console.error("Falló Firebase Authentication.",error);maybePrompt()})}
 catch(error){mode="error";setCloudStatus(`No se pudo inicializar Firebase: ${error.message}`,true);console.error("No se pudo inicializar Firebase.",error);maybePrompt()}}
 document.addEventListener("click",e=>{const t=e.target,b=t.closest("button[data-k]");
 if(b){const k=b.dataset.k,v=+b.dataset.v,x=st[k];if(x&&x.v===v)removeMark(k);else saveMark(k,v);return}
 const tk=t.closest("input[data-tk]");if(tk){tk.checked?saveMark(tk.dataset.tk,1):removeMark(tk.dataset.tk);return}
 if(t.closest("#deleteResolvedObservations")){deleteResolvedObservations();return}
 const observationAction=t.closest("button[data-ob-action]");if(observationAction){updateObservation(observationAction.dataset.obId,observationAction.dataset.obAction);return}
-const evidenceFile=t.closest("button[data-validation-file]");if(evidenceFile){downloadValidationFile(evidenceFile.dataset.validationFile);return}
 const w=t.closest("button[data-w]");if(w)return saveAtt(w.dataset.w);if(t.id=="chg"){e.preventDefault();openAtt();return}
 if(t.id=="atb"||t.id=="mak")return who?saveAtt():openAtt();
 const d=t.closest(".cd");if(d){sel=d.dataset.d;calHtml()}});

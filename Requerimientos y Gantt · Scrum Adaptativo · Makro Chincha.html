@@ -7,7 +7,7 @@
 <header class="hero"><div class="w"><span class="tag">🏬 Makro Chincha · Scrum Adaptativo</span>
 <h1>Control de objetos perdidos · proyecto 2026-II</h1>
 <p>Makro Supermayorista S.A. · Sede Chincha · UPSJB · Ciclo VIII · 2026-II</p></div></header>
-<nav aria-label="Navegación principal"><div class="w"><a href="#rf">📋 Requerimientos</a><a href="#rnf">🛡️ Calidad</a><a href="#flujo">🔄 Flujo de atención</a><a href="#team">👥 Equipo y roles</a><a href="#gantt">📊 Gantt</a><a href="#cer">🗓️ Ceremonias</a><a href="#observaciones">🗒️ Observaciones</a><a href="#stakeholderValidation" id="stakeholderNav" hidden>✅ Validación stakeholder</a><button id="calb" style="margin-left:auto">📅 Calendario</button></div></nav>
+<nav aria-label="Navegación principal"><div class="w"><a href="#rf">📋 Requerimientos</a><a href="#rnf">🛡️ Calidad</a><a href="#flujo">🔄 Flujo de atención</a><a href="#team">👥 Equipo y roles</a><a href="#gantt">📊 Gantt</a><a href="#cer">🗓️ Ceremonias</a><a href="#observaciones">🗒️ Observaciones</a><a href="#stakeholderValidation" id="stakeholderNav" hidden>✅ Validación semanal</a><button id="calb" style="margin-left:auto">📅 Calendario</button></div></nav>
 <main><div class="w">
 <div class="wkb" id="wkb"></div>
 <div class="cloud-state" id="cloudState" role="status" aria-live="polite">Conectando con la base de datos compartida…</div>
@@ -51,8 +51,8 @@
 <div class="drive"><input id="dl" type="url" placeholder="Pega aquí el enlace de la carpeta de Drive con las evidencias (capturas)" aria-label="Enlace a la carpeta de evidencias"><button id="dgo" type="button">Abrir carpeta</button></div><p id="driveStatus" class="drive-status" role="status" aria-live="polite"></p>
 <div class="gwrap"><table class="cer" id="ct"></table></div></section>
 
-<section id="stakeholderValidation" hidden><h2>✅ Validación semanal del stakeholder</h2>
-<p class="section-intro">Apartado privado de Patricia (Stakeholder · QA). Registra el resultado de cada semana, sus observaciones y enlaces de referencia en Firestore. La subida directa de archivos Word, Excel o PowerPoint se habilitará al activar Cloud Storage con una cuenta de facturación.</p>
+<section id="stakeholderValidation" hidden><h2>✅ Validaciones semanales del equipo</h2>
+<p class="section-intro">Cada semana tiene su registro organizado en Firestore, como una carpeta de seguimiento lista para usar. Patricia (Stakeholder · QA) documenta las pruebas realizadas, marca si fueron validadas y añade observaciones. Todo el equipo puede consultar los resultados en tiempo real; no hace falta adjuntar archivos ni enlaces.</p>
 <p id="weeklyValidationStatus" role="status" aria-live="polite"></p><div id="weeklyValidationList" class="weekly-validation-list"></div>
 </section>
 
@@ -88,6 +88,5 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js" defer></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js" defer></script>
 <script src="assets/js/firebase-config.js?v=scrumadaptativo-firestore-v1" defer></script>
-<script src="assets/js/app.js?v=gantt-uml-state-v3" defer></script></body></html>
+<script src="assets/js/app.js?v=weekly-validation-shared-v4" defer></script></body></html>
