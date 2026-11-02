@@ -40,7 +40,7 @@ El workflow `.github/workflows/pages.yml` publica los archivos estáticos en Git
 
 ## Seguimiento del proyecto
 
-Los requisitos funcionales y no funcionales reflejan el Word: RF-01 a RF-32 y RNF-01 a RNF-11. El Gantt concentra preparación, borradores, prototipos y arquitectura en las semanas 1–10; la semana 1 incluye entrevistas al personal de Atención al Cliente de Makro, la semana 4 se dedica únicamente a diagramas UML y la semana 10 migra datos de prueba y servicios Spring Boot desde Windows 10 a Ubuntu. Los sprints 1–4 abarcan las semanas 11–14 y completan los RF-01 a RF-32; la semana 15 es la entrega final y cualquier integrante del equipo puede marcarla.
+Los requisitos funcionales y no funcionales reflejan el Word: RF-01 a RF-32 y RNF-01 a RNF-11. El Gantt concentra preparación, borradores, prototipos y arquitectura en las semanas 1–10; la semana 1 incluye entrevistas al personal de Atención al Cliente de Makro, la semana 4 se dedica únicamente a diagramas UML de casos de uso, actividades, clases y estado, y la semana 10 migra datos de prueba y servicios Spring Boot desde Windows 10 a Ubuntu. Los sprints 1–4 abarcan las semanas 11–14 y completan los RF-01 a RF-32; la semana 15 es la entrega final y cualquier integrante del equipo puede marcarla.
 
 Antes de habilitar esta versión, publica las nuevas reglas de Firestore:
 

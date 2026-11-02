@@ -41,7 +41,7 @@ const ACT=[
 ["Semana 3 · Crear bocetos de navegación y pantallas principales","fe",3,3],
 ["Semana 3 · Comparar alternativas técnicas y documentar decisiones de arquitectura","be",3,3],
 ["Semana 4 · Elaborar diagramas UML de casos de uso y actividades","po",4,4],
-["Semana 4 · Elaborar diagramas UML de clases y componentes","be",4,4],
+["Semana 4 · Elaborar diagramas UML de clases y de estado","be",4,4],
 ["Semana 5 · Revisar el prototipo con el stakeholder y registrar ajustes","qa",5,5],
 ["Semana 5 · Refinar historias, prioridades y criterios de aceptación","po",5,5],
 ["Semana 6 · Construir componentes visuales de prueba y guía de estilos","fe",6,6],
