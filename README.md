@@ -7,8 +7,7 @@ Los checks de RF/RNF, Gantt, ceremonias, tareas por rol y asistencias existentes
 La configuración del cliente está en `assets/js/firebase-config.js` y apunta al proyecto `scrumadaptativo`. El proyecto usa Cloud Firestore en la región `northamerica-northeast1`. Para que la sincronización funcione:
 
 1. La autenticación anónima ya está habilitada en **Authentication → Método de acceso**.
-2. Las reglas actualizadas de este cambio están solo en el archivo local `firestore.rules`; no se han desplegado. No publiques las reglas ni la página mientras el acceso siga siendo demostrativo.
-
+2. Las reglas actualizadas de `firestore.rules` se publicaron en el proyecto `scrumadaptativo`. Se actualizan permisos de Firestore; no se borran ni modifican documentos existentes.
 3. Las validaciones semanales no usan Cloud Storage: la prueba realizada, el resultado y las observaciones se guardan directamente en Firestore.
 4. Abre la página con conexión a Internet e inicia sesión con el integrante correspondiente. Si la página indica un error de Firebase, no se guardará el cambio localmente como si se hubiera sincronizado.
 
@@ -16,7 +15,7 @@ La carga inicial no elimina ni restablece marcas del Gantt, RF/RNF, tareas, cere
 
 ## Seguridad y atribución
 
-El acceso actual usa autenticación anónima y PIN de demostración que está incluido en el código público del sitio. **El nombre y el PIN no comprueban quién es la persona**; cualquier visitante puede leer y modificar los checks del equipo eligiendo un integrante. Las reglas limitan la escritura al proyecto y al formato de datos esperado, pero no hacen confiable la identidad indicada por el cliente. No guardes datos personales, secretos ni uses esta versión como auditoría formal.
+El acceso actual usa autenticación anónima y PINs de demostración incluidos en el código público. **El nombre y el PIN no comprueban quién es la persona**; cualquier visitante puede leer y modificar los checks del equipo eligiendo un integrante. No guardes datos personales, secretos ni uses esta versión como auditoría formal.
 
 Para identificar realmente quién cambió cada check, cada integrante debe tener una cuenta Firebase verificada y las reglas deben asociar de forma fija cada cuenta con su rol. Eso requiere habilitar/configurar el proveedor y asignar UIDs confiables. No se debe desplegar esta versión de reglas con el perfil anónimo seleccionable.
 
@@ -38,14 +37,10 @@ El workflow `.github/workflows/pages.yml` publica los archivos estáticos en Git
 
 Los requisitos funcionales y no funcionales reflejan el Word: RF-01 a RF-32 y RNF-01 a RNF-11. El Gantt concentra preparación, borradores, prototipos y arquitectura en las semanas 1–10; la semana 1 incluye entrevistas al personal de Atención al Cliente de Makro, la semana 4 se dedica únicamente a diagramas UML de casos de uso, actividades, clases y estado, y la semana 10 migra datos de prueba y servicios Spring Boot desde Windows 10 a Ubuntu. Los sprints 1–4 abarcan las semanas 11–14 y completan los RF-01 a RF-32; la semana 15 es la entrega final y cualquier integrante del equipo puede marcarla.
 
-No ejecutar el despliegue hasta reemplazar el acceso de demostración por cuentas verificadas y reglas con roles de confianza. Cuando esa configuración esté lista:
-
-```sh
-firebase deploy --only firestore:rules --project scrumadaptativo
-```
+El equipo continúa usando los cinco accesos por nombre/PIN existentes. Esos PIN no verifican identidad; el despliegue permite sincronizar datos en Firestore, pero no convierte los roles de demostración en una protección frente a visitantes que suplanten a un integrante.
 
 El Gantt permite buscar, filtrar por rol y estado, imprimir el cronograma o descargar como CSV las actividades visibles. La arquitectura prevista usa Spring Boot con Java en backend y Angular con TypeScript en frontend. El equipo Front End se enfoca en la interfaz gráfica y UI/UX.
 
 La Product Owner puede crear, editar y eliminar observaciones vinculadas a RF y asignadas a un Developer. Cada Developer consulta solo sus propias asignaciones y puede responderlas o resolverlas; Scrum Master y Stakeholder no tienen acceso a ese seguimiento. La Product Owner también puede registrar la aceptación de RF por sprint. La evaluación docente continúa visible únicamente para Scrum Master.
 
-Este sitio es el tablero de planificación; no almacena objetos perdidos reales ni implementa aún el sistema web descrito por los requerimientos. **Riesgo conocido:** la selección de nombre/PIN y el perfil anónimo no verifican identidad. Los roles del cliente no son una barrera de seguridad mientras no se configuren cuentas Firebase Auth verificadas y una asignación confiable por UID/custom claims. Aunque las reglas locales restringen acciones por rol, el esquema de demostración permite suplantar roles; no lo uses con datos reales. Este cambio no se ha subido a GitHub ni desplegado en Firebase.
+Este sitio es el tablero de planificación; no almacena objetos perdidos reales ni implementa aún el sistema web descrito por los requerimientos. **Riesgo conocido:** la selección de nombre/PIN y el perfil anónimo no verifican identidad. Los roles del cliente no son una barrera de seguridad mientras no se configuren cuentas Firebase Auth verificadas y una asignación confiable por UID/custom claims. Aunque las reglas restringen acciones por rol, el esquema de demostración permite suplantar roles; no lo uses con datos reales.

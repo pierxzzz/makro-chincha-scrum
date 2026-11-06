@@ -277,7 +277,7 @@ function setAuthStatus(message,isError=false){const status=$("authStatus");statu
 function maybePrompt(){if(prompted)return;prompted=true;if(mode!=="cloud")openAtt()}
 function openAtt(){
 $("authTitle").textContent="🔐 Ingreso al tablero";
-$("authHelp").textContent="Elige tu nombre para leer y guardar los checks compartidos en la nube.";
+$("authHelp").textContent="Elige tu nombre e ingresa el PIN de demostración para conectarte.";
 $("loginForm").hidden=false;$("loginUser").value="";$("loginPin").value="";
 setAuthStatus("El PIN es demostrativo y no confirma que seas la persona seleccionada.",false);
 $("mda").hidden=false}
