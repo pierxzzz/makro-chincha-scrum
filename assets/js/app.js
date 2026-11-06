@@ -117,7 +117,7 @@ const CC=[["m","Reunión Zoom/Meet"],["d","Daily / seguimiento"],["e","Captura e
 const ATR=["Usabilidad","Seguridad por roles","Integridad","Escalabilidad","Mantenibilidad","Fiabilidad","Eliminación lógica","Trazabilidad","Seguridad y privacidad","Base de datos","Concurrencia"];
 const reqSprint=i=>i<6?1:i<18?2:i<27?3:4,dueRF=i=>[11,12,13,14][reqSprint(i)-1],dueRNF=i=>[11,11,11,11,11,12,12,12,13,12,14][i];
 const reqMarkKey=(type,id)=>`${type==="rf"?"rf-v2":"rnf-v2"}_${id}`;
-const REVIEW_ID="final-review",RESET_ID="project-gantt-checks-reset-2026-11";
+const REVIEW_ID="final-review";
 const REVIEW_FIELDS={approval:"Pendiente",grade:"",teacherNote:"",nextAction:""};
 const RF_PRIORITY=RF.map(r=>r.id);
 let st={},att={},observations=[],review={...REVIEW_FIELDS},mode="sin-sesion",sel=today(),cm=Number(today().slice(5,7))-1,cy=Number(today().slice(0,4)),onlyP=false,prompted=false,onlyMe=false,deletingResolvedObservations=false;
@@ -317,11 +317,7 @@ async function saveAtt(n=who){const i=WHO.findIndex(x=>x[0]===n);if(i<0)return;i
 const id=today()+"_u"+i;if(att[id]){setCloudStatus("La asistencia de este rol ya está registrada hoy.");return}
 try{await db.collection("asist").doc(id).set({d:today(),p:n,r:WHO[i][1],t:fmt(new Date()),at:fmt(new Date()),uid:currentUid,createdAt:firebase.firestore.FieldValue.serverTimestamp()})}
 catch(e){console.error("No se pudo registrar la asistencia en Firestore.",e);setCloudStatus(`No se registró la asistencia en la nube: ${e.message}`,true)}}
-async function ensureProjectChecksReset(){const marker=db.collection("meta").doc(RESET_ID),snapshot=await marker.get();if(snapshot.exists)return;
-const existingMarks=await db.collection("marks").get(),docs=existingMarks.docs.filter(doc=>/^g\d+$/.test(doc.id));
-try{for(let offset=0;offset<docs.length||offset===0;offset+=450){const batch=db.batch(),end=Math.min(offset+450,docs.length);for(let i=offset;i<end;i++)batch.delete(docs[i].ref);
-if(end===docs.length)batch.set(marker,{version:4,uid:currentUid,resetAt:firebase.firestore.FieldValue.serverTimestamp()});await batch.commit();if(end===docs.length)break}}
-catch(error){const existing=await marker.get();if(existing.exists)return;throw error}}
+async function ensureProjectChecksReset(){}
 function stopCloudSubscriptions(){if(marksUnsub)marksUnsub();if(attendanceUnsub)attendanceUnsub();if(observationsUnsub)observationsUnsub();if(reviewUnsub)reviewUnsub();if(weeklyValidationUnsub)weeklyValidationUnsub();
 marksUnsub=null;attendanceUnsub=null;observationsUnsub=null;reviewUnsub=null;weeklyValidationUnsub=null}
 function subscribeCloudData(){stopCloudSubscriptions();cloudReady=false;let marksReady=false,attendanceReady=false,observationsReady=false,reviewReady=memberRole()!=="sm",weeklyValidationReady=false;const uid=currentUid;
@@ -381,4 +377,223 @@ $("lg").innerHTML=ROLES.map(r=>`<span><i style="background:var(--${r[0]})"></i>$
 
 $("dl").value=L("mk3d").u||"";$("dl").onchange=()=>{SV("mk3d",{u:$("dl").value});$("driveStatus").textContent="Enlace guardado en este navegador."};
 $("dgo").onclick=()=>{try{const u=new URL($("dl").value.trim());if(!["https:","http:"].includes(u.protocol))throw new Error();window.open(u.href,"_blank","noopener,noreferrer");$("driveStatus").textContent="Abriendo la carpeta de evidencias…"}catch{$("driveStatus").textContent="Pega un enlace web válido (https:// o http://) antes de abrir la carpeta."}};
+
+// Role-scoped implementations below replace the legacy demo handlers without changing checks or calendar behavior.
+var requirementApprovals={},requirementApprovalDrafts={},weeklyValidationDrafts={},teamRetrospectiveResponses={},teamRetrospectiveDraft={},teamRetrospectiveDraftUid="",requirementApprovalError="",teamRetrospectiveError="",requirementApprovalsUnsub=null,teamRetrospectiveUnsub=null;
+var weeklyValidationEditingId="",weeklyValidationNewWeek=0,weeklyValidationBusyId="",editingObservationId="",requirementApprovalBusyId="";
+const TEAM_RETRO_QUESTIONS=[
+{key:"time",text:"El equipo gestionó el tiempo y cumplió los plazos de forma realista."},
+{key:"improvements",text:"Las mejoras acordadas durante el trabajo se llevaron a la práctica."},
+{key:"implementation",text:"La implementación cumplió los criterios de aceptación y la calidad esperada."},
+{key:"collaboration",text:"La comunicación y colaboración entre los integrantes fueron efectivas."},
+{key:"value",text:"El resultado final aporta valor y responde a las necesidades del proyecto."}
+];
+function renderRequirementApprovals(){
+const role=memberRole(),visible=role==="po"||role==="fe"||role==="be",canEdit=role==="po";
+$("requirementApprovals").hidden=!visible;$("requirementApprovalsNav").hidden=!visible;
+if(!visible)return;
+if(requirementApprovalError){$("requirementApprovalStatus").textContent=`Firestore no permite consultar las aceptaciones: ${requirementApprovalError}. Las reglas actualizadas aún no están activas.`;$("requirementApprovalList").innerHTML='<p class="empty-state">La aceptación por Product Owner requiere publicar las reglas actualizadas después de configurar identidades seguras.</p>';return}
+if(!cloudReady){$("requirementApprovalStatus").textContent="Conéctate a Firestore para consultar las decisiones de aceptación.";$("requirementApprovalList").innerHTML='<p class="empty-state">Las decisiones se mostrarán al conectar con la nube.</p>';return}
+$("requirementApprovalStatus").textContent=canEdit?"Solo la Product Owner puede registrar, editar o eliminar estas decisiones.":"Consulta de solo lectura: las decisiones las registra la Product Owner.";
+$("requirementApprovalList").innerHTML=RF.map((requirement,index)=>{
+const data=requirementApprovals[requirement.id]||{},draft=requirementApprovalDrafts[requirement.id]||{},status=draft.status||data.status||"Pendiente",comment=Object.prototype.hasOwnProperty.call(draft,"comment")?draft.comment:data.comment||"",updated=data.updatedBy?`Actualizado por ${escapeHtml(data.updatedBy)} · ${escapeHtml(recordTime(data))}`:"Sin decisión registrada";
+if(!canEdit)return `<article class="approval-card"><div class="approval-heading"><b>${escapeHtml(requirement.id)} · ${escapeHtml(requirement.n)}</b><span class="chip ${status==="Aprobado"?"done":status==="Observado"?"no":"pending"}">${escapeHtml(status)}</span></div><p><strong>Sprint ${reqSprint(index)}</strong> · ${escapeHtml(comment||"Sin observaciones de aceptación.")}</p><small class="validation-updated">${updated}</small></article>`;
+return `<form class="approval-card" data-requirement-approval="${escapeHtml(requirement.id)}"><div class="approval-heading"><b>${escapeHtml(requirement.id)} · ${escapeHtml(requirement.n)}</b><span class="chip ${status==="Aprobado"?"done":status==="Observado"?"no":"pending"}">${escapeHtml(status)}</span></div><small>Sprint ${reqSprint(index)}</small><label>Decisión<select class="approval-status" ${!cloudReady?"disabled":""}><option ${status==="Pendiente"?"selected":""}>Pendiente</option><option ${status==="Aprobado"?"selected":""}>Aprobado</option><option ${status==="Observado"?"selected":""}>Observado</option></select></label><label>Observaciones<textarea class="approval-comment" maxlength="500" rows="2" ${!cloudReady?"disabled":""} placeholder="Criterio pendiente o motivo de aceptación/observación.">${escapeHtml(comment)}</textarea></label><div class="approval-actions"><small class="validation-updated">${updated}</small><button class="pri" type="submit" ${!cloudReady||requirementApprovalBusyId===requirement.id?"disabled":""}>Guardar</button>${data.status?`<button type="button" class="danger-button" data-approval-delete="${escapeHtml(requirement.id)}" ${!cloudReady?"disabled":""}>Eliminar decisión</button>`:""}</div></form>`
+}).join("");
+}
+async function saveRequirementApproval(event){
+event.preventDefault();const form=event.target.closest("form[data-requirement-approval]");if(!form)return;
+const id=form.dataset.requirementApproval,index=RF.findIndex(item=>item.id===id),status=form.querySelector(".approval-status").value,comment=form.querySelector(".approval-comment").value.trim();
+if(memberRole()!=="po"||index<0){setCloudStatus("Solo la Product Owner puede registrar aceptaciones.",true);return}
+if(requirementApprovalError){$("requirementApprovalStatus").textContent="Las reglas de Firestore todavía no permiten guardar aceptaciones.";return}
+if(!cloudReady||!currentUid){$("requirementApprovalStatus").textContent="Sin conexión a Firestore; no se guardó la decisión.";return}
+if(!["Pendiente","Aprobado","Observado"].includes(status)||comment.length>500){$("requirementApprovalStatus").textContent="Revisa la decisión y el límite de 500 caracteres.";return}
+requirementApprovalDrafts[id]={status,comment};
+requirementApprovalBusyId=id;form.querySelector('button[type="submit"]').disabled=true;
+const record={requirement:id,status,comment,sprint:reqSprint(index),updatedBy:who,updatedUid:currentUid};
+try{await db.collection("aprobacionesRequisitos").doc(id).set({...record,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});requirementApprovals[id]={...record,updatedAt:new Date()};delete requirementApprovalDrafts[id];$("requirementApprovalStatus").textContent=`Decisión de ${id} guardada y sincronizada.`;renderRequirementApprovals()}
+catch(error){console.error("No se pudo guardar la aceptación del requerimiento.",error);$("requirementApprovalStatus").textContent=`No se guardó ${id}: ${error.message}`}
+finally{requirementApprovalBusyId="";form.querySelector('button[type="submit"]')?.removeAttribute("disabled")}
+}
+async function deleteRequirementApproval(id){
+if(memberRole()!=="po"||!cloudReady||!RF_PRIORITY.includes(id)){setCloudStatus("No tienes permiso para eliminar esta decisión.",true);return}
+if(requirementApprovalError){$("requirementApprovalStatus").textContent="Las reglas de Firestore todavía no permiten eliminar decisiones.";return}
+if(!window.confirm(`¿Eliminar la decisión de aceptación de ${id}?`))return;
+try{await db.collection("aprobacionesRequisitos").doc(id).delete();delete requirementApprovals[id];delete requirementApprovalDrafts[id];$("requirementApprovalStatus").textContent=`Decisión de ${id} eliminada.`;renderRequirementApprovals()}
+catch(error){console.error("No se pudo eliminar la aceptación del requerimiento.",error);$("requirementApprovalStatus").textContent=`No se eliminó ${id}: ${error.message}`}
+}
+function renderStakeholderValidation(force=false){
+const signedIn=Boolean(who),canEdit=memberRole()==="qa";
+$("stakeholderNav").hidden=!signedIn;$("stakeholderValidation").hidden=!signedIn;
+if(!signedIn)return;
+const container=$("weeklyValidationList");
+if(!cloudReady){container.innerHTML='<p class="empty-state">Conéctate a Firestore para consultar las validaciones semanales del equipo.</p>';return}
+if(!force&&container.dataset.loaded==="true")return;
+container.dataset.loaded="true";
+const makeForm=(week,data={},recordId="",cancelable=false)=>{
+const id=escapeHtml(recordId),key=recordId||`week-${String(week).padStart(2,"0")}-new`,draft=weeklyValidationDrafts[key]||{},value={...data,...draft},title=value.title||"Validación semanal",titleLocked=Boolean(recordId&&!recordId.includes("-entry-")&&!data.title);
+return `<form class="validation-week" data-validation-week="${week}" data-validation-record="${id}"><div class="validation-week-heading"><b>Semana ${week} · ${escapeHtml(ph(week))}</b><label><input class="validation-check" type="checkbox" ${value.validated===true?"checked":""}> Pruebas validadas</label></div><label>Título de la prueba<textarea class="validation-title" maxlength="120" rows="1" placeholder="Ej.: Preparación, borrador, prototipo o cierre" ${titleLocked?"disabled":""}>${escapeHtml(title)}</textarea></label><label>Pruebas realizadas y resultados<textarea class="validation-tests" maxlength="2000" rows="4" placeholder="Describe qué se probó, el resultado obtenido y si pasó correctamente." required>${escapeHtml(value.testSummary||"")}</textarea></label><label>Observaciones y seguimiento<textarea class="validation-observation" maxlength="1000" rows="3" placeholder="Anota hallazgos, pendientes o acciones acordadas.">${escapeHtml(value.observation||"")}</textarea></label><div class="validation-week-footer"><small>${data.updatedBy?`Actualizado por ${escapeHtml(data.updatedBy)} · ${escapeHtml(recordTime(data))}`:"Nueva preparación"}</small><div class="validation-actions"><button class="pri" type="submit" ${!cloudReady||weeklyValidationBusyId===key?"disabled":""}>Guardar</button>${cancelable?'<button type="button" data-validation-action="cancel">Cancelar</button>':""}</div></div></form>`
+};
+container.innerHTML=Array.from({length:15},(_,index)=>{
+const week=index+1,records=Object.entries(weeklyValidations).filter(([,data])=>Number(data.week)===week).map(([id,data])=>({id,data})).sort((a,b)=>(eventDate(b.data)?.getTime()||0)-(eventDate(a.data)?.getTime()||0));
+const cards=records.map(({id,data})=>{
+if(canEdit&&weeklyValidationEditingId===id)return makeForm(week,data,id,true);
+const updated=data.updatedBy?`Actualizado por ${escapeHtml(data.updatedBy)} · ${escapeHtml(recordTime(data))}`:"Sin fecha registrada";
+const actions=canEdit?`<div class="validation-actions"><button type="button" data-validation-action="edit" data-validation-id="${escapeHtml(id)}" ${!cloudReady?"disabled":""}>Editar</button><button type="button" class="danger-button" data-validation-action="delete" data-validation-id="${escapeHtml(id)}" ${!cloudReady?"disabled":""}>Eliminar</button></div>`:"";
+return `<article class="validation-week ${data.validated===true?"validation-approved":""}"><div class="validation-week-heading"><b>Semana ${week} · ${escapeHtml(ph(week))}</b><span class="validation-result ${data.validated===true?"approved":""}">${data.validated===true?"✓ Validada":"Pendiente"}</span></div><h3 class="validation-title-display">${escapeHtml(data.title||"Validación semanal")}</h3><p><strong>Pruebas realizadas y resultados</strong><br>${data.testSummary?escapeHtml(data.testSummary):"Sin pruebas descritas."}</p><p><strong>Observaciones y seguimiento</strong><br>${data.observation?escapeHtml(data.observation):"Sin observaciones registradas."}</p><small class="validation-updated">${updated}</small>${actions}</article>`
+}).join("");
+const editOpen=weeklyValidationEditingId&&records.some(record=>record.id===weeklyValidationEditingId),newOpen=weeklyValidationNewWeek===week;
+const showInitial=canEdit&&records.length===0&&!editOpen;
+const newForm=canEdit&&(newOpen||showInitial)?makeForm(week,{}, "",records.length>0):"";
+const addButton=canEdit&&records.length>0&&!newOpen&&!editOpen?`<button type="button" class="validation-add" data-validation-action="new" data-validation-week="${week}">＋ Nueva preparación para semana ${week}</button>`:"";
+return `<div class="validation-week-group"><div class="validation-group-heading"><h3>Semana ${week}</h3><span>${records.length} ${records.length===1?"registro":"registros"}</span></div>${cards}${newForm}${addButton||(!records.length&&!canEdit&&!cards?"<p class=\"empty-state\">La stakeholder aún no registra pruebas para esta semana.</p>":"")}</div>`
+}).join("");
+}
+async function saveWeeklyValidation(event){
+event.preventDefault();const form=event.target.closest("form[data-validation-week]");if(!form)return;
+const week=Number(form.dataset.validationWeek),recordId=form.dataset.validationRecord,weekId=`week-${String(week).padStart(2,"0")}`,status=$("weeklyValidationStatus");
+if(memberRole()!=="qa"){status.textContent="Solo la Stakeholder puede guardar validaciones semanales.";return}
+if(!cloudReady||!currentUid){status.textContent="La conexión a Firestore no está disponible; no se guardaron los cambios.";return}
+const title=form.querySelector(".validation-title").value.trim(),testSummary=form.querySelector(".validation-tests").value.trim(),observation=form.querySelector(".validation-observation").value.trim();
+if(!Number.isInteger(week)||week<1||week>15||!title||title.length>120||!testSummary||testSummary.length>2000||observation.length>1000){status.textContent="Completa el título (máx. 120), las pruebas (máx. 2000) y revisa las observaciones (máx. 1000).";return}
+const busyId=recordId||`${weekId}-new`;weeklyValidationBusyId=busyId;const data={week,validated:form.querySelector(".validation-check").checked,testSummary,observation,updatedBy:who,updatedUid:currentUid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+if(!recordId||recordId.includes("-entry-")||weeklyValidations[recordId]?.title)data.title=title;
+form.querySelector('button[type="submit"]').disabled=true;status.textContent=`Guardando la preparación de la semana ${week}…`;
+try{
+let targetId=recordId;
+if(recordId)await db.collection("validacionesSemanales").doc(recordId).update(data);
+else{const ref=db.collection("validacionesSemanales").doc();targetId=`${weekId}-entry-${ref.id}`;await db.collection("validacionesSemanales").doc(targetId).set(data)}
+weeklyValidations[targetId]={...data,updatedAt:new Date()};
+delete weeklyValidationDrafts[busyId];weeklyValidationEditingId="";weeklyValidationNewWeek=0;status.textContent=`Preparación de la semana ${week} guardada y sincronizada con el equipo.`;renderStakeholderValidation(true)
+}catch(error){console.error("No se pudo guardar la validación semanal.",error);status.textContent=`No se guardó la validación de la semana ${week}: ${error.message}`}
+finally{weeklyValidationBusyId=""}
+}
+async function updateObservation(noteId,action){
+const note=observations.find(item=>item.id===noteId),role=memberRole();
+if(action==="edit"){if(role!=="po"||!note)return;editingObservationId=noteId;$("obDeveloper").value=note.developer;$("obRequirement").value=note.requirement;$("obPriority").value=note.priority;$("obText").value=note.text;$("saveObservation").textContent="Guardar cambios";$("cancelObservationEdit").hidden=false;$("observationForm").scrollIntoView({behavior:"smooth",block:"center"});return}
+if(action==="cancel-edit"){editingObservationId="";$("observationForm").reset();$("saveObservation").textContent="Enviar observación";$("cancelObservationEdit").hidden=true;return}
+if(action==="delete"){if(role!=="po"||!note){setCloudStatus("Solo la Product Owner puede eliminar observaciones.",true);return}
+if(!cloudReady||!currentUid){$("observationStatus").textContent="Sin conexión a Firestore; no se eliminó la observación.";return}
+if(!window.confirm(`¿Eliminar la observación ${note.requirement} asignada a ${note.developer==="fe"?"Front End":"Back End"}? Esta acción no se puede deshacer.`))return;
+try{await db.collection("observaciones").doc(noteId).delete();if(editingObservationId===noteId)updateObservation(noteId,"cancel-edit");$("observationStatus").textContent="Observación eliminada y cambio sincronizado con el equipo."}
+catch(error){console.error("No se pudo eliminar la observación.",error);$("observationStatus").textContent=`No se eliminó la observación: ${error.message}`}return}
+if(!note||note.developer!==role||!["fe","be"].includes(role)){setCloudStatus("No tienes permiso para responder esta observación.",true);return}
+if(!cloudReady||!currentUid){setCloudStatus("La nube todavía no está lista. La observación no se actualizó.",true);return}
+const responseField=$(`ob-reply-${noteId}`),response=responseField?responseField.value.trim():note.developerResponse||"",status=action==="start"?"En curso":action==="resolve"?"Resuelta":note.developerStatus==="Resuelta"?"Resuelta":"En curso";
+if(!["start","reply","resolve"].includes(action)||note.developerStatus==="Resuelta"&&action!=="reply"){setCloudStatus("La observación ya está resuelta o la acción no es válida.",true);return}
+if(action==="resolve"&&!response){setCloudStatus("Escribe una respuesta antes de marcar la observación como resuelta.",true);$(`ob-reply-${noteId}`)?.focus();return}
+if(response.length>1000){setCloudStatus("La respuesta no puede superar 1000 caracteres.",true);return}
+try{await db.collection("observaciones").doc(noteId).update({developerStatus:status,developerResponse:response,developerUpdatedBy:who,developerUpdatedUid:currentUid,developerUpdatedAt:firebase.firestore.FieldValue.serverTimestamp()})}
+catch(error){console.error("No se pudo actualizar la observación asignada.",error);setCloudStatus(`No se actualizó la observación: ${error.message}`)}}
+function renderObservations(){
+const role=memberRole(),isPO=role==="po",isDeveloper=role==="fe"||role==="be",section=$("observaciones"),form=$("observationForm");
+section.hidden=!(isPO||isDeveloper);$("observationsNav").hidden=!(isPO||isDeveloper);
+if(!(isPO||isDeveloper)){$("observationRolePanel").innerHTML="";$("observationStatus").textContent="";$("observationList").innerHTML="";form.hidden=true;return}
+form.hidden=!isPO;$("saveObservation").disabled=!cloudReady||!isPO;
+if(isPO)$("observationRolePanel").innerHTML=`<div class="observation-role-heading"><div><b>Panel de la Product Owner</b><small>Crea, edita y elimina observaciones para cada Developer; resueltas: ${observations.filter(note=>note.developerStatus==="Resuelta").length}.</small></div><button type="button" class="danger-button" id="deleteResolvedObservations" ${!cloudReady||!observations.some(note=>note.developerStatus==="Resuelta")||deletingResolvedObservations?"disabled":""}>${deletingResolvedObservations?"Eliminando…":"🗑 Eliminar resueltas"}</button></div>`;
+else $("observationRolePanel").innerHTML='<div class="observation-role-heading"><div><b>Mis observaciones asignadas</b><small>Consulta y responde solo las observaciones dirigidas a tu rol.</small></div></div>';
+const visible=observations.filter(note=>isPO||note.developer===role);
+$("observationStatus").textContent=cloudReady?`${visible.length} observación(es) visibles para este rol.`:"Conéctate a Firestore para consultar observaciones.";
+$("observationList").innerHTML=visible.map(note=>{
+const status=note.developerStatus||"Pendiente",canRespond=isDeveloper&&note.developer===role,age=eventDate(note),hours=age?Math.floor((Date.now()-age.getTime())/36e5):0,overdue=status==="Pendiente"&&hours>=24,noteId=escapeHtml(note.id);
+return `<article class="observation-card priority-${note.priority==="Bloqueante"?"blocker":note.priority==="Alta"?"high":"normal"} ${overdue?"observation-overdue":""}"><div class="observation-head"><b>${escapeHtml(note.requirement)} · ${escapeHtml(note.developer==="fe"?"Front End":"Back End")}</b><span class="chip ${status==="Resuelta"?"done":status==="En curso"?"wip":"pending"}">${escapeHtml(status)}</span></div><p>${escapeHtml(note.text)}</p><div class="observation-meta"><span class="chip ${note.priority==="Bloqueante"?"no":note.priority==="Alta"?"wip":""}">Prioridad ${escapeHtml(note.priority)}</span><small class="ts">Product Owner · ${escapeHtml(note.author||"")} · ${escapeHtml(recordTime(note))}${status!=="Resuelta"&&age?` · ${hours} h abierta`:""}</small></div>${note.developerResponse?`<div class="developer-response"><b>Respuesta de ${escapeHtml(note.developerUpdatedBy||"Developer")} · ${escapeHtml(note.developerUpdatedAt?recordTime({createdAt:note.developerUpdatedAt}):"")}</b><p>${escapeHtml(note.developerResponse)}</p></div>`:""}${canRespond?`<label class="observation-reply">Respuesta del Developer<textarea id="ob-reply-${noteId}" maxlength="1000" rows="3" placeholder="Describe el avance, solución o evidencia (máx. 1000 caracteres).">${escapeHtml(note.developerResponse||"")}</textarea></label><div class="observation-actions">${status==="Pendiente"?`<button type="button" data-ob-action="start" data-ob-id="${noteId}" ${!cloudReady?"disabled":""}>Tomar observación</button>`:""}<button type="button" class="pri" data-ob-action="reply" data-ob-id="${noteId}" ${!cloudReady?"disabled":""}>${status==="Resuelta"?"Actualizar respuesta":"Guardar respuesta"}</button>${status!=="Resuelta"?`<button type="button" data-ob-action="resolve" data-ob-id="${noteId}" ${!cloudReady?"disabled":""}>Marcar resuelta</button>`:""}</div>`:""}${isPO?`<div class="observation-actions"><button type="button" data-ob-action="edit" data-ob-id="${noteId}" ${!cloudReady?"disabled":""}>Editar</button><button type="button" class="danger-button icon-button" data-ob-action="delete" data-ob-id="${noteId}" ${!cloudReady?"disabled":""}>🗑 Eliminar</button></div>`:""}</article>`
+}).join("")||'<p class="empty-state">Aún no hay observaciones para este rol.</p>';
+}
+async function saveObservation(event){
+event.preventDefault();if(memberRole()!=="po"){$("observationStatus").textContent="Solo la Product Owner puede administrar observaciones.";return}
+if(!cloudReady||!currentUid){$("observationStatus").textContent="La nube todavía no está lista. No se guardaron los cambios.";return}
+const developer=$("obDeveloper").value,requirement=$("obRequirement").value,priority=$("obPriority").value,text=$("obText").value.trim();
+if(!["fe","be"].includes(developer)||!RF_PRIORITY.includes(requirement)||!["Normal","Alta","Bloqueante"].includes(priority)||!text||text.length>500){$("observationStatus").textContent="Completa destinatario, requerimiento y observación (máx. 500 caracteres).";return}
+const button=$("saveObservation");button.disabled=true;
+try{
+if(editingObservationId){const previous=observations.find(note=>note.id===editingObservationId),changes={requirement,developer,priority,text,updatedBy:who,updatedUid:currentUid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};if(previous&&previous.developer!==developer)Object.assign(changes,{developerStatus:"Pendiente",developerResponse:"",developerUpdatedBy:who,developerUpdatedUid:currentUid,developerUpdatedAt:firebase.firestore.FieldValue.serverTimestamp()});await db.collection("observaciones").doc(editingObservationId).update(changes);editingObservationId="";$("observationStatus").textContent="Observación actualizada y sincronizada."}
+else{await db.collection("observaciones").add({requirement,developer,priority,text,author:who,authorUid:currentUid,createdAt:firebase.firestore.FieldValue.serverTimestamp()});$("observationStatus").textContent="Observación guardada y compartida con el Developer asignado."}
+$("observationForm").reset();button.textContent="Enviar observación";$("cancelObservationEdit").hidden=true
+}catch(error){console.error("No se pudo guardar la observación de la Product Owner.",error);$("observationStatus").textContent=`No se guardó la observación: ${error.message}`}
+finally{button.disabled=false}
+}
+function renderTeamRetrospective(){
+const available=curW()>=15,visible=Boolean(who)&&available,role=memberRole(),form=$("teamRetrospectiveForm");
+if(teamRetrospectiveDraftUid!==currentUid){teamRetrospectiveDraft={};teamRetrospectiveDraftUid=currentUid}
+const myResponse=teamRetrospectiveResponses[role]||null;
+$("teamRetrospective").hidden=!visible;$("teamRetrospectiveNav").hidden=!visible;
+if(!visible)return;
+if(teamRetrospectiveError){form.innerHTML="";$("teamRetrospectiveStatus").textContent=`Firestore no permite consultar la retroalimentación: ${teamRetrospectiveError}. Las reglas actualizadas aún no están activas.`;$("teamRetrospectiveResults").innerHTML='<p class="empty-state">La encuesta requiere publicar las reglas actualizadas después de configurar identidades seguras.</p>';return}
+const disabled=!cloudReady;
+if(form.dataset.loaded==="true")TEAM_RETRO_QUESTIONS.forEach(question=>{const selected=form.querySelector(`[name="${question.key}"]:checked`);if(selected)teamRetrospectiveDraft[question.key]=Number(selected.value)});
+const answers={...(myResponse?.answers||{}),...teamRetrospectiveDraft};
+form.innerHTML=TEAM_RETRO_QUESTIONS.map((question,index)=>`<fieldset class="retro-question"><legend>${index+1}. ${escapeHtml(question.text)}</legend><div class="likert-options" role="radiogroup" aria-label="${escapeHtml(question.text)}">${[1,2,3,4,5].map(value=>`<label class="likert-option"><input type="radio" name="${question.key}" value="${value}" ${Number(answers[question.key])===value?"checked":""} ${disabled?"disabled":""}><span>${value}</span></label>`).join("")}</div><div class="likert-labels"><span>En desacuerdo</span><span>De acuerdo</span></div></fieldset>`).join("")+`<button class="pri" type="submit" ${disabled?"disabled":""}>${myResponse?"Actualizar mi retroalimentación":"Guardar mi retroalimentación"}</button>`;
+form.dataset.loaded="true";
+$("teamRetrospectiveStatus").textContent=disabled?"Conéctate a Firestore para registrar la retroalimentación.":myResponse?`Tu respuesta está guardada. Puedes actualizarla. · ${escapeHtml(recordTime(myResponse))}`:"Responde las cinco preguntas; cada rol mantiene una respuesta.";
+const responses=Object.entries(teamRetrospectiveResponses),averages=TEAM_RETRO_QUESTIONS.map(question=>{const values=responses.map(([,item])=>Number(item.answers?.[question.key])).filter(Number.isFinite);return values.length?(values.reduce((sum,value)=>sum+value,0)/values.length).toFixed(1):"—"});
+$("teamRetrospectiveResults").innerHTML=`<h3>Respuestas del equipo · ${responses.length}/5</h3><div class="retro-average-grid">${TEAM_RETRO_QUESTIONS.map((question,index)=>`<article><b>${averages[index]}</b><span>${escapeHtml(question.text)}</span></article>`).join("")}</div><div class="retro-response-list">${responses.map(([memberRoleId,response])=>{const memberIndex=ROLE_CODES.indexOf(memberRoleId),memberName=memberIndex>=0?WHO[memberIndex][0]:response.name;return `<article class="retro-response"><b>${escapeHtml(memberName)} · ${escapeHtml(response.role==="sm"?"Scrum Master":response.role==="po"?"Product Owner":response.role==="fe"?"Developer Front End":response.role==="be"?"Developer Back End":"Stakeholder")}</b><span>${TEAM_RETRO_QUESTIONS.map((question,index)=>`${index+1}: ${Number(response.answers?.[question.key])||"—"}`).join(" · ")}</span></article>`}).join("")||'<p class="empty-state">Aún no hay respuestas.</p>'}</div>`;
+}
+async function saveTeamRetrospective(event){
+event.preventDefault();if(curW()<15){$("teamRetrospectiveStatus").textContent="La retroalimentación se habilita al llegar la semana 15.";return}
+if(teamRetrospectiveError){$("teamRetrospectiveStatus").textContent="Las reglas de Firestore todavía no permiten guardar la retroalimentación.";return}
+const role=memberRole(),roleIndex=ROLE_CODES.indexOf(role);
+if(roleIndex<0||!cloudReady||!currentUid){$("teamRetrospectiveStatus").textContent="Conéctate como integrante del equipo cuando la semana 15 esté habilitada.";return}
+const answers={};for(const question of TEAM_RETRO_QUESTIONS){const selected=$("teamRetrospectiveForm").querySelector(`[name="${question.key}"]:checked`);answers[question.key]=selected?Number(selected.value):0}
+if(Object.values(answers).some(value=>!Number.isInteger(value)||value<1||value>5)){$("teamRetrospectiveStatus").textContent="Marca una respuesta del 1 al 5 en cada pregunta.";return}
+const button=$("teamRetrospectiveForm").querySelector('button[type="submit"]');button.disabled=true;$("teamRetrospectiveStatus").textContent="Guardando tu retroalimentación…";
+try{await db.collection("retrospectivaLikert").doc(role).set({week:15,role,name:who,answers,uid:currentUid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});teamRetrospectiveResponses[role]={week:15,role,name:who,answers,uid:currentUid,updatedAt:new Date()};teamRetrospectiveDraft={};$("teamRetrospectiveStatus").textContent="Retroalimentación guardada y sincronizada con el equipo.";renderTeamRetrospective()}
+catch(error){console.error("No se pudo guardar la retroalimentación del equipo.",error);$("teamRetrospectiveStatus").textContent=`No se guardó la retroalimentación: ${error.message}`}
+finally{button.disabled=false}
+}
+function render(){
+rfHtml();rnfHtml();ganttHtml();rolesHtml();cerHtml();teamHtml();stats();banner();panel();renderObservations();renderRequirementApprovals();renderReview();$("teacherReviewNav").hidden=memberRole()!=="sm";renderStakeholderValidation();renderTeamRetrospective();if(!$("mdc").hidden)calHtml()
+}
+function stopCloudSubscriptions(){
+if(marksUnsub)marksUnsub();if(attendanceUnsub)attendanceUnsub();if(observationsUnsub)observationsUnsub();if(reviewUnsub)reviewUnsub();if(weeklyValidationUnsub)weeklyValidationUnsub();if(requirementApprovalsUnsub)requirementApprovalsUnsub();if(teamRetrospectiveUnsub)teamRetrospectiveUnsub();
+marksUnsub=null;attendanceUnsub=null;observationsUnsub=null;reviewUnsub=null;weeklyValidationUnsub=null;requirementApprovalsUnsub=null;teamRetrospectiveUnsub=null
+}
+function subscribeCloudData(){
+stopCloudSubscriptions();cloudReady=false;
+requirementApprovalError="";teamRetrospectiveError="";
+let marksReady=false,attendanceReady=false,observationsReady=!["po","fe","be"].includes(memberRole()),reviewReady=memberRole()!=="sm",weeklyValidationReady=false;
+const uid=currentUid,role=memberRole();
+setCloudStatus("Cargando la información compartida desde Firestore…");
+const ready=()=>{if(!marksReady||!attendanceReady||!observationsReady||!reviewReady||!weeklyValidationReady)return;cloudReady=true;setCloudStatus(`Conectado a Firestore · ${who} · cambios sincronizados en tiempo real.`);render()};
+const failed=(label,error)=>{cloudReady=false;console.error(label,error);setCloudStatus(`${label}: ${error.message}`,true);render()};
+attendanceUnsub=db.collection("asist").onSnapshot(snapshot=>{att={};snapshot.forEach(doc=>{att[doc.id]=doc.data()});attendanceReady=true;render();ready()},error=>failed("No se pudieron leer las asistencias",error));
+if(["po","fe","be"].includes(role)){
+let query=db.collection("observaciones");
+if(role!=="po")query=query.where("developer","==",role);
+observationsUnsub=query.onSnapshot(snapshot=>{observations=snapshot.docs.map(doc=>({id:doc.id,...doc.data()})).sort((a,b)=>(eventDate(b)?.getTime()||0)-(eventDate(a)?.getTime()||0));observationsReady=true;render();ready()},error=>failed("No se pudieron leer las observaciones asignadas",error))
+}else observations=[];
+if(role==="sm")reviewUnsub=db.collection("evaluaciones").doc(REVIEW_ID).onSnapshot(snapshot=>{review=snapshot.exists?{...REVIEW_FIELDS,...snapshot.data()}:{...REVIEW_FIELDS};populateReview();reviewReady=true;render();ready()},error=>failed("No se pudo leer la evaluación docente",error));
+else review={...REVIEW_FIELDS};
+weeklyValidationUnsub=db.collection("validacionesSemanales").onSnapshot(snapshot=>{weeklyValidations={};snapshot.forEach(doc=>{weeklyValidations[doc.id]=doc.data()});weeklyValidationReady=true;renderStakeholderValidation(true);ready()},error=>failed("No se pudieron leer las validaciones semanales",error));
+if(["po","fe","be"].includes(role))requirementApprovalsUnsub=db.collection("aprobacionesRequisitos").onSnapshot(snapshot=>{requirementApprovalError="";requirementApprovals={};snapshot.forEach(doc=>{requirementApprovals[doc.id]=doc.data()});renderRequirementApprovals()},error=>{requirementApprovalError=error.message;requirementApprovals={};console.error("No se pudieron leer las aceptaciones de requerimientos.",error);renderRequirementApprovals()});
+else requirementApprovals={};
+teamRetrospectiveUnsub=db.collection("retrospectivaLikert").onSnapshot(snapshot=>{teamRetrospectiveError="";teamRetrospectiveResponses={};snapshot.forEach(doc=>{teamRetrospectiveResponses[doc.id]=doc.data()});renderTeamRetrospective()},error=>{teamRetrospectiveError=error.message;teamRetrospectiveResponses={};console.error("No se pudo leer la retroalimentación del equipo.",error);renderTeamRetrospective()});
+ensureProjectChecksReset().then(()=>{if(currentUid!==uid)return;marksUnsub=db.collection("marks").onSnapshot(snapshot=>{st={};snapshot.forEach(doc=>{st[doc.id]=doc.data()});marksReady=true;render();ready()},error=>failed("No se pudieron leer los checks en la nube",error))}).catch(error=>failed("No se pudieron cargar las marcas existentes",error))
+}
+document.addEventListener("click",event=>{
+const button=event.target.closest("[data-validation-action]");
+if(button){
+const action=button.dataset.validationAction,id=button.dataset.validationId,week=Number(button.dataset.validationWeek);
+if(action==="new"){weeklyValidationEditingId="";weeklyValidationNewWeek=week;renderStakeholderValidation(true)}
+if(action==="edit"){weeklyValidationEditingId=id;weeklyValidationNewWeek=0;renderStakeholderValidation(true)}
+if(action==="cancel"){const form=button.closest("form[data-validation-week]");if(form){const key=form.dataset.validationRecord||`week-${String(form.dataset.validationWeek).padStart(2,"0")}-new`;delete weeklyValidationDrafts[key]}weeklyValidationEditingId="";weeklyValidationNewWeek=0;renderStakeholderValidation(true)}
+if(action==="delete"){
+if(memberRole()!=="qa"||!id){$("weeklyValidationStatus").textContent="Solo la Stakeholder puede eliminar validaciones.";return}
+if(!cloudReady||!currentUid){$("weeklyValidationStatus").textContent="Sin conexión a Firestore; no se eliminó la prueba.";return}
+if(!window.confirm("¿Eliminar esta prueba y sus observaciones de Firestore para todo el equipo? Esta acción no se puede deshacer."))return;
+db.collection("validacionesSemanales").doc(id).delete().then(()=>{delete weeklyValidationDrafts[id];delete weeklyValidations[id];$("weeklyValidationStatus").textContent="Prueba eliminada y cambio sincronizado con el equipo.";renderStakeholderValidation(true)}).catch(error=>{$("weeklyValidationStatus").textContent=`No se eliminó la prueba: ${error.message}`;console.error("No se pudo eliminar la validación semanal.",error)})
+}
+return
+}
+const approval=event.target.closest("[data-approval-delete]");if(approval)deleteRequirementApproval(approval.dataset.approvalDelete)
+});
+$("requirementApprovalList").addEventListener("submit",saveRequirementApproval);
+$("requirementApprovalList").addEventListener("input",event=>{const form=event.target.closest("form[data-requirement-approval]");if(form)requirementApprovalDrafts[form.dataset.requirementApproval]={status:form.querySelector(".approval-status").value,comment:form.querySelector(".approval-comment").value}});
+$("requirementApprovalList").addEventListener("change",event=>{const form=event.target.closest("form[data-requirement-approval]");if(form)requirementApprovalDrafts[form.dataset.requirementApproval]={status:form.querySelector(".approval-status").value,comment:form.querySelector(".approval-comment").value}});
+$("weeklyValidationList").addEventListener("input",event=>{const form=event.target.closest("form[data-validation-week]");if(form){const key=form.dataset.validationRecord||`week-${String(form.dataset.validationWeek).padStart(2,"0")}-new`;weeklyValidationDrafts[key]={title:form.querySelector(".validation-title").value,testSummary:form.querySelector(".validation-tests").value,observation:form.querySelector(".validation-observation").value,validated:form.querySelector(".validation-check").checked}}});
+$("weeklyValidationList").addEventListener("change",event=>{const form=event.target.closest("form[data-validation-week]");if(form){const key=form.dataset.validationRecord||`week-${String(form.dataset.validationWeek).padStart(2,"0")}-new`;weeklyValidationDrafts[key]={title:form.querySelector(".validation-title").value,testSummary:form.querySelector(".validation-tests").value,observation:form.querySelector(".validation-observation").value,validated:form.querySelector(".validation-check").checked}}});
+$("teamRetrospectiveForm").addEventListener("change",event=>{const input=event.target;if(input.matches('input[type="radio"]'))teamRetrospectiveDraft[input.name]=Number(input.value)});
+$("teamRetrospectiveForm").addEventListener("submit",saveTeamRetrospective);
+$("cancelObservationEdit").addEventListener("click",()=>updateObservation(editingObservationId,"cancel-edit"));
+setInterval(()=>{if(who&&curW()>=15&&$("teamRetrospective").hidden)renderTeamRetrospective()},60000);
+
 render();setInterval(tick,1000);setInterval(render,60000);startCloudMode();

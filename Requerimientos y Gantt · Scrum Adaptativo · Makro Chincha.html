@@ -3,11 +3,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Sistema web de control de objetos perdidos para Makro Chincha: requerimientos, flujo de atención, roles y cronograma.">
 <title>Requerimientos y Gantt · Scrum Adaptativo · Makro Chincha</title>
-<link rel="stylesheet" href="assets/css/styles.css?v=sprints-validation-v1"></head><body>
+<link rel="stylesheet" href="assets/css/styles.css?v=weekly-validation-crud-v2"></head><body>
 <header class="hero"><div class="w"><span class="tag">🏬 Makro Chincha · Scrum Adaptativo</span>
 <h1>Control de objetos perdidos · proyecto 2026-II</h1>
 <p>Makro Supermayorista S.A. · Sede Chincha · UPSJB · Ciclo VIII · 2026-II</p></div></header>
-<nav aria-label="Navegación principal"><div class="w"><a href="#rf">📋 Requerimientos</a><a href="#rnf">🛡️ Calidad</a><a href="#flujo">🔄 Flujo de atención</a><a href="#team">👥 Equipo y roles</a><a href="#gantt">📊 Gantt</a><a href="#cer">🗓️ Ceremonias</a><a href="#observaciones">🗒️ Observaciones</a><a href="#stakeholderValidation" id="stakeholderNav" hidden>✅ Validación semanal</a><button id="calb" style="margin-left:auto">📅 Calendario</button></div></nav>
+<nav aria-label="Navegación principal"><div class="w"><a href="#rf">📋 Requerimientos</a><a href="#requirementApprovals" id="requirementApprovalsNav" hidden>✅ Aceptación PO</a><a href="#rnf">🛡️ Calidad</a><a href="#flujo">🔄 Flujo de atención</a><a href="#team">👥 Equipo y roles</a><a href="#gantt">📊 Gantt</a><a href="#cer">🗓️ Ceremonias</a><a href="#observaciones" id="observationsNav" hidden>🗒️ Seguimiento</a><a href="#stakeholderValidation" id="stakeholderNav" hidden>✅ Validación semanal</a><a href="#teamRetrospective" id="teamRetrospectiveNav" hidden>📊 Retroalimentación</a><a href="#teacherReview" id="teacherReviewNav" hidden>🎓 Scrum Master</a><button id="calb" style="margin-left:auto">📅 Calendario</button></div></nav>
 <main><div class="w">
 <div class="wkb" id="wkb"></div>
 <div class="cloud-state" id="cloudState" role="status" aria-live="polite">Conectando con la base de datos compartida…</div>
@@ -17,6 +17,11 @@
 <section id="rf"><h2>Requerimientos funcionales (RF)</h2>
 <div class="tools"><input type="search" id="q" placeholder="Buscar RF por código o palabra…"><button id="fp">Ver solo pendientes</button><button id="th">🌓 Tema</button></div>
 <div class="gwrap"><table class="tb" id="rft"></table></div></section>
+
+<section id="requirementApprovals" hidden><h2>✅ Aceptación de requerimientos · Product Owner</h2>
+<p class="section-intro">La Product Owner registra la aceptación de cada RF y puede dejar observaciones; los Developers consultan estas decisiones. Los checks existentes del tablero se mantienen independientes.</p>
+<p id="requirementApprovalStatus" role="status" aria-live="polite"></p><div id="requirementApprovalList" class="requirement-approval-list"></div>
+</section>
 
 <section id="rnf"><h2>Requerimientos no funcionales (RNF)</h2><div class="gwrap"><table class="tb" id="rnt"></table></div></section>
 
@@ -52,21 +57,28 @@
 <div class="gwrap"><table class="cer" id="ct"></table></div></section>
 
 <section id="stakeholderValidation" hidden><h2>✅ Validaciones semanales del equipo</h2>
-<p class="section-intro">Cada semana tiene su registro organizado en Firestore, como una carpeta de seguimiento lista para usar. Patricia (Stakeholder · QA) documenta las pruebas realizadas, marca si fueron validadas y añade observaciones. Todo el equipo puede consultar los resultados en tiempo real; no hace falta adjuntar archivos ni enlaces.</p>
+<p class="section-intro">La Stakeholder registra pruebas, resultado de validación y observaciones para las 15 semanas. Al guardar, el registro queda visible para el equipo; puede editarlo, eliminarlo o crear otra preparación dentro de la misma semana.</p>
 <p id="weeklyValidationStatus" role="status" aria-live="polite"></p><div id="weeklyValidationList" class="weekly-validation-list"></div>
 </section>
 
-<section id="observaciones"><h2>🗒️ Seguimiento de observaciones del equipo</h2>
-<p class="section-intro">El Product Owner asigna observaciones; el Developer responsable actualiza su respuesta y estado; el Scrum Master consulta el seguimiento. Los cambios se sincronizan en tiempo real. Solo el Product Owner puede eliminar observaciones; la eliminación masiva incluye únicamente las resueltas.</p>
+<section id="observaciones" hidden><h2>🗒️ Seguimiento de observaciones del equipo</h2>
+<p class="section-intro">Solo la Product Owner administra las observaciones; cada Developer consulta y responde las que tiene asignadas. El Scrum Master y la Stakeholder no tienen acceso a este apartado.</p>
 <form id="observationForm" class="observation-form" hidden>
 <label>Developer destinatario<select id="obDeveloper" required><option value="">Selecciona el rol</option><option value="fe">Airton · Developer 1 · Front End</option><option value="be">Dayron · Developer 2 · Back End</option></select></label>
 <label>Requerimiento relacionado<select id="obRequirement" required><option value="">Selecciona el requerimiento</option></select></label>
 <label>Prioridad<select id="obPriority" required><option value="Normal">Normal</option><option value="Alta">Alta</option><option value="Bloqueante">Bloqueante</option></select></label>
 <label class="observation-text">Observación<textarea id="obText" maxlength="500" rows="3" placeholder="Describe el ajuste esperado, contexto o criterio de aceptación (máx. 500 caracteres)." required></textarea></label>
 <button class="pri" id="saveObservation" type="submit">Enviar observación</button>
+<button id="cancelObservationEdit" type="button" hidden>Cancelar edición</button>
 </form>
 <div id="observationRolePanel" class="observation-role-panel" aria-live="polite"></div>
 <p id="observationStatus" role="status" aria-live="polite"></p><div id="observationList" class="observation-list"></div>
+</section>
+
+<section id="teamRetrospective" hidden><h2>📊 Retroalimentación del equipo · Semana 15</h2>
+<p class="section-intro">Se habilita automáticamente al llegar la semana 15 del Gantt. Cada integrante responde una vez; puede actualizar su respuesta. Escala: 1 = totalmente en desacuerdo, 5 = totalmente de acuerdo.</p>
+<form id="teamRetrospectiveForm" class="retrospective-form"></form>
+<p id="teamRetrospectiveStatus" role="status" aria-live="polite"></p><div id="teamRetrospectiveResults" class="retrospective-results"></div>
 </section>
 
 <section id="teacherReview" hidden><h2>🎓 Evaluación del docente · Scrum Master</h2>
@@ -83,10 +95,10 @@
 </div></main>
 <div class="md" id="mdc" hidden><div class="mb"><div class="mh"><button id="cp">◀</button><b id="cmt"></b><button id="cn">▶</button><button id="cx">✕</button></div><div class="cg" id="cgr"></div><div class="cdt" id="cdt"></div></div></div>
 <div class="md" id="mda" hidden><div class="mb"><h3 id="authTitle">🔐 Ingreso del equipo</h3><p id="authHelp">Selecciona tu nombre e ingresa el PIN de demostración para conectarte.</p><form id="loginForm"><label class="field">Integrante<select id="loginUser" autocomplete="username" required><option value="">Selecciona tu nombre</option><option value="Piero">Piero · Scrum Master</option><option value="María">María · Product Owner</option><option value="Airton">Airton · Developer 1 · Front End</option><option value="Dayron">Dayron · Developer 2 · Back End</option><option value="Patricia">Patricia · Stakeholder · QA</option></select></label><label class="field">PIN de 5 dígitos (demostrativo)<input id="loginPin" type="password" inputmode="numeric" pattern="[0-9]{5}" minlength="5" maxlength="5" autocomplete="off" required></label><p class="bad">El PIN y el nombre están visibles en el código de la página; no verifican tu identidad. Usa una cuenta personal antes de emplear estos datos como auditoría formal.</p><div class="tools"><button class="pri" id="loginButton" type="submit">Conectar y entrar</button></div></form><p id="authStatus" role="status" aria-live="polite"></p></div></div>
-<footer>Los checks, tareas, asistencias, observaciones y evaluación Scrum Master se sincronizan con Firestore para los miembros conectados. La primera conexión con las reglas actualizadas limpia una sola vez todas las marcas de avance del tablero; no borra ni modifica la colección de asistencias del calendario. Se necesita conexión a Internet y Firebase Authentication anónima y Firestore habilitados. El nombre elegido no verifica identidad: para auditoría confiable, configura cuentas individuales verificadas. ✓/✗ se pueden alternar; la asistencia diaria es permanente.</footer>
+<footer>Los checks, tareas, asistencias y nuevos seguimientos se guardan en Firestore. Estos cambios no eliminan ni modifican marcas existentes ni asistencias. El acceso sigue siendo demostrativo: nombre y PIN no verifican identidad. No uses datos reales ni despliegues estas reglas como protección formal hasta configurar cuentas Firebase individuales y roles confiables.</footer>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js" defer></script>
 <script src="assets/js/firebase-config.js?v=scrumadaptativo-firestore-v1" defer></script>
-<script src="assets/js/app.js?v=weekly-validation-shared-v4" defer></script></body></html>
+<script src="assets/js/app.js?v=weekly-validation-crud-v2" defer></script></body></html>

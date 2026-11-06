@@ -8,8 +8,10 @@ rules_version = '2';
 // marks/{markId}: v (0/1), t, by, role, uid, updatedAt (timestamp).
 // asist/{YYYY-MM-DD_u0..u4}: d, p, r, t, at, uid, createdAt (timestamp).
 // observaciones/{id}: PO-authored feedback; the assigned Developer may update response/status.
-// Only the Product Owner may permanently delete observations.
-// validacionesSemanales/{week-01..week-15}: stakeholder-authored shared test results.
+// Only the Product Owner manages observations; assigned Developers respond.
+// validacionesSemanales/{week-01..week-15[-entry-id]}: shared QA test results.
+// aprobacionesRequisitos/{RF-01..RF-32}: Product Owner acceptance by sprint.
+// retrospectivaLikert/{sm|po|fe|be|qa}: one week-15 response per team role.
 // evaluaciones/final-review: Scrum Master-only project evaluation.
 // ===============================================================
 
@@ -111,15 +113,18 @@ service cloud.firestore {
     }
 
     function validWeeklyValidation(weekId) {
-      return weekId.matches('^week-(0[1-9]|1[0-5])$')
+      return weekId.matches('^week-(0[1-9]|1[0-5])(-entry-[A-Za-z0-9_-]{1,128})?$')
         && request.resource.data.keys().hasAll([
           'week', 'validated', 'testSummary', 'observation',
           'updatedBy', 'updatedUid', 'updatedAt'
         ])
         && request.resource.data.keys().hasOnly([
           'week', 'validated', 'testSummary', 'observation',
-          'updatedBy', 'updatedUid', 'updatedAt'
+          'updatedBy', 'updatedUid', 'updatedAt', 'title'
         ])
+        && (!('title' in request.resource.data)
+          || (request.resource.data.title is string
+            && request.resource.data.title.size() <= 120))
         && request.resource.data.week is int
         && request.resource.data.week >= 1
         && request.resource.data.week <= 15
@@ -133,6 +138,76 @@ service cloud.firestore {
         && member().role == 'qa'
         && request.resource.data.updatedUid == request.auth.uid
         && request.resource.data.updatedAt == request.time;
+    }
+
+    function validRequirementApproval(requirementId) {
+      return requirementId.matches('^RF-(0[1-9]|[12][0-9]|3[0-2])$')
+        && request.resource.data.keys().hasAll([
+          'requirement', 'status', 'comment', 'sprint',
+          'updatedBy', 'updatedUid', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'requirement', 'status', 'comment', 'sprint',
+          'updatedBy', 'updatedUid', 'updatedAt'
+        ])
+        && request.resource.data.requirement == requirementId
+        && request.resource.data.status in ['Pendiente', 'Aprobado', 'Observado']
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() <= 500
+        && request.resource.data.sprint is int
+        && request.resource.data.sprint >= 1
+        && request.resource.data.sprint <= 4
+        && (
+          (requirementId.matches('^RF-(0[1-6])$') && request.resource.data.sprint == 1)
+          || (requirementId.matches('^RF-(0[7-9]|1[0-8])$') && request.resource.data.sprint == 2)
+          || (requirementId.matches('^RF-(1[9]|2[0-7])$') && request.resource.data.sprint == 3)
+          || (requirementId.matches('^RF-(2[8-9]|3[0-2])$') && request.resource.data.sprint == 4)
+        )
+        && request.resource.data.updatedBy == member().name
+        && member().role == 'po'
+        && request.resource.data.updatedUid == request.auth.uid
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    function validTeamRetrospective(uid) {
+      return uid == request.auth.uid
+        // 2026-11-30 05:00Z is midnight in Lima, when week 15 begins.
+        && request.time >= timestamp.value(1796014800000)
+        && request.resource.data.keys().hasAll([
+          'week', 'role', 'name', 'answers', 'uid', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'week', 'role', 'name', 'answers', 'uid', 'updatedAt'
+        ])
+        && request.resource.data.week == 15
+        && request.resource.data.week is int
+        && member().role in ['sm', 'po', 'fe', 'be', 'qa']
+        && request.resource.data.role == member().role
+        && request.resource.data.name == member().name
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.answers is map
+        && request.resource.data.answers.keys().hasAll([
+          'time', 'improvements', 'implementation', 'collaboration', 'value'
+        ])
+        && request.resource.data.answers.keys().hasOnly([
+          'time', 'improvements', 'implementation', 'collaboration', 'value'
+        ])
+        && request.resource.data.answers.time is int
+        && request.resource.data.answers.time >= 1
+        && request.resource.data.answers.time <= 5
+        && request.resource.data.answers.improvements is int
+        && request.resource.data.answers.improvements >= 1
+        && request.resource.data.answers.improvements <= 5
+        && request.resource.data.answers.implementation is int
+        && request.resource.data.answers.implementation >= 1
+        && request.resource.data.answers.implementation <= 5
+        && request.resource.data.answers.collaboration is int
+        && request.resource.data.answers.collaboration >= 1
+        && request.resource.data.answers.collaboration <= 5
+        && request.resource.data.answers.value is int
+        && request.resource.data.answers.value >= 1
+        && request.resource.data.answers.value <= 5;
     }
 
     function validObservation() {
@@ -153,6 +228,42 @@ service cloud.firestore {
         && member().role == 'po'
         && request.resource.data.authorUid == request.auth.uid
         && request.resource.data.createdAt == request.time;
+    }
+
+    function validObservationEdit() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'requirement', 'developer', 'priority', 'text',
+          'updatedBy', 'updatedUid', 'updatedAt', 'developerStatus',
+          'developerResponse', 'developerUpdatedBy', 'developerUpdatedUid',
+          'developerUpdatedAt'
+        ])
+        && request.resource.data.requirement is string
+        && request.resource.data.requirement.matches('^RF-(0[1-9]|[12][0-9]|3[0-2])$')
+        && request.resource.data.developer in ['fe', 'be']
+        && request.resource.data.priority in ['Normal', 'Alta', 'Bloqueante']
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 500
+        && request.resource.data.author == resource.data.author
+        && request.resource.data.authorUid == resource.data.authorUid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (
+          (request.resource.data.developer == resource.data.developer
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+              'developerStatus', 'developerResponse', 'developerUpdatedBy',
+              'developerUpdatedUid', 'developerUpdatedAt'
+            ]))
+          || (request.resource.data.developer != resource.data.developer
+            && request.resource.data.developerStatus == 'Pendiente'
+            && request.resource.data.developerResponse == ''
+            && request.resource.data.developerUpdatedBy == member().name
+            && request.resource.data.developerUpdatedUid == request.auth.uid
+            && request.resource.data.developerUpdatedAt == request.time)
+        )
+        && request.resource.data.updatedBy == member().name
+        && member().role == 'po'
+        && request.resource.data.updatedUid == request.auth.uid
+        && request.resource.data.updatedAt == request.time;
     }
 
     function validObservationResponse() {
@@ -228,13 +339,36 @@ service cloud.firestore {
       allow create, update: if isActiveMember()
         && member().role == 'qa'
         && validWeeklyValidation(weekId);
+      allow delete: if isActiveMember()
+        && member().role == 'qa'
+        && weekId.matches('^week-(0[1-9]|1[0-5])(-entry-[A-Za-z0-9_-]{1,128})?$');
+    }
+
+    match /aprobacionesRequisitos/{requirementId} {
+      allow read: if isActiveMember() && member().role in ['po', 'fe', 'be'];
+      allow create, update: if isActiveMember()
+        && member().role == 'po'
+        && validRequirementApproval(requirementId);
+      allow delete: if isActiveMember()
+        && member().role == 'po'
+        && requirementId.matches('^RF-(0[1-9]|[12][0-9]|3[0-2])$');
+    }
+
+    match /retrospectivaLikert/{uid} {
+      allow read: if isActiveMember();
+      allow create, update: if isActiveMember() && validTeamRetrospective(uid);
       allow delete: if false;
     }
 
     match /observaciones/{observationId} {
-      allow read: if isActiveMember();
+      allow read: if isActiveMember()
+        && (member().role == 'po'
+          || (member().role in ['fe', 'be']
+            && resource.data.developer == member().role));
       allow create: if isActiveMember() && validObservation();
-      allow update: if isActiveMember() && validObservationResponse();
+      allow update: if isActiveMember()
+        && (validObservationResponse()
+          || (member().role == 'po' && validObservationEdit()));
       allow delete: if isActiveMember() && member().role == 'po';
     }
 
