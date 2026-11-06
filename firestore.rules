@@ -335,7 +335,8 @@ service cloud.firestore {
     }
 
     match /validacionesSemanales/{weekId} {
-      allow read: if isActiveMember();
+      allow read: if isActiveMember()
+        && (member().role == 'qa' || resource.data.validated == true);
       allow create, update: if isActiveMember()
         && member().role == 'qa'
         && validWeeklyValidation(weekId);

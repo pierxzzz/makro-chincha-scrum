@@ -2,7 +2,7 @@
 
 ## Datos compartidos en la nube
 
-Los checks de RF/RNF, Gantt, ceremonias, tareas por rol y asistencias existentes se conservan. Las validaciones QA admiten varios registros por semana (1–15), con creación, edición y eliminación por el rol Stakeholder; el equipo los consulta en tiempo real. La Product Owner registra la aceptación de los RF y administra observaciones; cada Developer solo consulta las observaciones asignadas a su rol y actualiza su respuesta. El Scrum Master conserva su sección de evaluación exclusiva. La retroalimentación Likert de cinco preguntas se habilita al iniciar la semana 15 y mantiene una respuesta por rol del equipo. Las nuevas funciones usan Firestore; no guardan resultados ficticios si la nube falla.
+Los checks de RF/RNF, Gantt, ceremonias, tareas por rol y asistencias existentes se conservan. Las validaciones QA admiten varios registros por semana (1–15), con creación, edición y eliminación por el rol Stakeholder; los demás roles solo pueden leer en tiempo real las pruebas que la Stakeholder marcó como validadas. La Product Owner registra la aceptación de los RF y administra observaciones; cada Developer solo consulta las observaciones asignadas a su rol y actualiza su respuesta. El Scrum Master conserva su sección de evaluación exclusiva. La retroalimentación Likert de cinco preguntas se habilita al iniciar la semana 15 y mantiene una respuesta por rol del equipo. Las nuevas funciones usan Firestore; no guardan resultados ficticios si la nube falla.
 
 La configuración del cliente está en `assets/js/firebase-config.js` y apunta al proyecto `scrumadaptativo`. El proyecto usa Cloud Firestore en la región `northamerica-northeast1`. Para que la sincronización funcione:
 
