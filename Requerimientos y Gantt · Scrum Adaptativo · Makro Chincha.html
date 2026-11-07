@@ -19,7 +19,7 @@
 <div class="gwrap"><table class="tb" id="rft"></table></div></section>
 
 <section id="requirementApprovals" hidden><h2>✅ Aceptación de requerimientos · Product Owner</h2>
-<p class="section-intro">La Product Owner registra la aceptación de cada RF y puede dejar observaciones; los Developers consultan estas decisiones. Los checks existentes del tablero se mantienen independientes.</p>
+<p class="section-intro">La Product Owner registra la aceptación de cada RF y puede dejar observaciones; los Developers consultan estas decisiones. Los cambios se sincronizan automáticamente al editar. Los checks existentes del tablero se mantienen independientes.</p>
 <p id="requirementApprovalStatus" role="status" aria-live="polite"></p><div id="requirementApprovalList" class="requirement-approval-list"></div>
 </section>
 
@@ -57,7 +57,7 @@
 <div class="gwrap"><table class="cer" id="ct"></table></div></section>
 
 <section id="stakeholderValidation" hidden><h2>✅ Validaciones semanales del equipo</h2>
-<p class="section-intro">La Stakeholder registra pruebas, resultado de validación y observaciones para las 15 semanas. Al guardar, el registro queda visible para el equipo; puede editarlo, eliminarlo o crear otra preparación dentro de la misma semana.</p>
+<p class="section-intro">La Stakeholder registra pruebas, resultado de validación y observaciones para las 15 semanas. Los cambios se sincronizan automáticamente al editar; el equipo ve en tiempo real los registros validados. Puede eliminar una prueba o crear otra preparación dentro de la misma semana.</p>
 <p id="weeklyValidationStatus" role="status" aria-live="polite"></p><div id="weeklyValidationList" class="weekly-validation-list"></div>
 </section>
 
@@ -95,10 +95,10 @@
 </div></main>
 <div class="md" id="mdc" hidden><div class="mb"><div class="mh"><button id="cp">◀</button><b id="cmt"></b><button id="cn">▶</button><button id="cx">✕</button></div><div class="cg" id="cgr"></div><div class="cdt" id="cdt"></div></div></div>
 <div class="md" id="mda" hidden><div class="mb"><h3 id="authTitle">🔐 Ingreso del equipo</h3><p id="authHelp">Selecciona tu nombre e ingresa el PIN de demostración para conectarte.</p><form id="loginForm"><label class="field">Integrante<select id="loginUser" autocomplete="username" required><option value="">Selecciona tu nombre</option><option value="Piero">Piero · Scrum Master</option><option value="María">María · Product Owner</option><option value="Airton">Airton · Developer 1 · Front End</option><option value="Dayron">Dayron · Developer 2 · Back End</option><option value="Patricia">Patricia · Stakeholder · QA</option></select></label><label class="field">PIN de 5 dígitos (demostrativo)<input id="loginPin" type="password" inputmode="numeric" pattern="[0-9]{5}" minlength="5" maxlength="5" autocomplete="off" required></label><p class="bad">El PIN y el nombre están visibles en el código de la página; no verifican tu identidad. Usa una cuenta personal antes de emplear estos datos como auditoría formal.</p><div class="tools"><button class="pri" id="loginButton" type="submit">Conectar y entrar</button></div></form><p id="authStatus" role="status" aria-live="polite"></p></div></div>
-<footer>Los checks, tareas, asistencias y nuevos seguimientos se guardan en Firestore. Estos cambios no eliminan ni modifican marcas existentes ni asistencias. El acceso sigue siendo demostrativo: nombre y PIN no verifican identidad. No uses datos reales ni despliegues estas reglas como protección formal hasta configurar cuentas Firebase individuales y roles confiables.</footer>
+<footer>Los checks, tareas, asistencias, enlace de Drive y nuevos seguimientos se guardan en Firestore. Estos cambios no eliminan ni modifican marcas existentes ni asistencias. El acceso sigue siendo demostrativo: nombre y PIN no verifican identidad. No uses datos reales ni despliegues estas reglas como protección formal hasta configurar cuentas Firebase individuales y roles confiables.</footer>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js" defer></script>
 <script src="assets/js/firebase-config.js?v=scrumadaptativo-firestore-v1" defer></script>
-<script src="assets/js/app.js?v=weekly-validation-approved-read-v3" defer></script></body></html>
+<script src="assets/js/app.js?v=realtime-role-autosave-v1" defer></script></body></html>

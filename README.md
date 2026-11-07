@@ -2,14 +2,15 @@
 
 ## Datos compartidos en la nube
 
-Los checks de RF/RNF, Gantt, ceremonias, tareas por rol y asistencias existentes se conservan. Las validaciones QA admiten varios registros por semana (1–15), con creación, edición y eliminación por el rol Stakeholder; los demás roles solo pueden leer en tiempo real las pruebas que la Stakeholder marcó como validadas. La Product Owner registra la aceptación de los RF y administra observaciones; cada Developer solo consulta las observaciones asignadas a su rol y actualiza su respuesta. El Scrum Master conserva su sección de evaluación exclusiva. La retroalimentación Likert de cinco preguntas se habilita al iniciar la semana 15 y mantiene una respuesta por rol del equipo. Las nuevas funciones usan Firestore; no guardan resultados ficticios si la nube falla.
+Los checks de RF/RNF, Gantt, ceremonias, tareas por rol y asistencias existentes se conservan. Las validaciones QA admiten varios registros por semana (1–15), con creación, edición y eliminación por el rol Stakeholder; los demás roles solo pueden leer en tiempo real las pruebas que la Stakeholder marcó como validadas. La Product Owner registra la aceptación de los RF y administra observaciones; cada Developer solo consulta las observaciones asignadas a su rol y actualiza su respuesta. El Scrum Master conserva su sección de evaluación exclusiva y administra el enlace compartido de Drive. La retroalimentación Likert de cinco preguntas se habilita al iniciar la semana 15 y mantiene una respuesta por rol del equipo. Las nuevas funciones usan Firestore; no guardan resultados ficticios si la nube falla.
 
 La configuración del cliente está en `assets/js/firebase-config.js` y apunta al proyecto `scrumadaptativo`. El proyecto usa Cloud Firestore en la región `northamerica-northeast1`. Para que la sincronización funcione:
 
 1. La autenticación anónima ya está habilitada en **Authentication → Método de acceso**.
 2. Las reglas actualizadas de `firestore.rules` se publicaron en el proyecto `scrumadaptativo`. Se actualizan permisos de Firestore; no se borran ni modifican documentos existentes.
-3. Las validaciones semanales no usan Cloud Storage: la prueba realizada, el resultado y las observaciones se guardan directamente en Firestore.
-4. Abre la página con conexión a Internet e inicia sesión con el integrante correspondiente. Si la página indica un error de Firebase, no se guardará el cambio localmente como si se hubiera sincronizado.
+3. Las validaciones semanales no usan Cloud Storage: la prueba realizada, el resultado y las observaciones se guardan directamente en Firestore. El enlace de Drive se comparte mediante `projectSettings/drive-evidence`; al iniciar como Scrum Master, el enlace antiguo guardado localmente se migra solo si todavía no existe uno en la nube.
+4. Abre la página con conexión a Internet e inicia sesión con el integrante correspondiente. Los perfiles de rol se crean como documentos propios de la sesión anónima; las reglas solo aceptan los cinco perfiles definidos y bloquean cambios/eliminaciones de esos perfiles.
+5. Si la página indica un error de Firebase, no se guardará el cambio localmente como si se hubiera sincronizado.
 
 La carga inicial no elimina ni restablece marcas del Gantt, RF/RNF, tareas, ceremonias o asistencias. Los checks históricos que existan solo en el `localStorage` de un navegador no se migran automáticamente: su autoría no se puede verificar.
 

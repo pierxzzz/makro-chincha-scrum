@@ -121,8 +121,8 @@ const REVIEW_ID="final-review";
 const REVIEW_FIELDS={approval:"Pendiente",grade:"",teacherNote:"",nextAction:""};
 const RF_PRIORITY=RF.map(r=>r.id);
 let st={},att={},observations=[],review={...REVIEW_FIELDS},mode="sin-sesion",sel=today(),cm=Number(today().slice(5,7))-1,cy=Number(today().slice(0,4)),onlyP=false,prompted=false,onlyMe=false,deletingResolvedObservations=false;
-let weeklyValidations={},weeklyValidationUnsub=null;
-const ENTRY=new Date(),L=k=>{try{return JSON.parse(localStorage.getItem(k))||{}}catch(e){console.error(`No se pudo leer ${k} del almacenamiento local.`,e);return {}}},SV=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){console.error(`No se pudo guardar ${k} en el almacenamiento local.`,e);return false}};
+let weeklyValidations={},weeklyValidationUnsub=null,driveLinkUnsub=null,driveLinkReady=false,driveLinkValue="",driveLinkError="";
+const ENTRY=new Date(),L=k=>{try{return JSON.parse(localStorage.getItem(k))||{}}catch(e){console.error(`No se pudo leer ${k} del almacenamiento local.`,e);return {}}};
 const by=x=>x&&x.by?" · "+x.by:"";
 const ok=k=>st[k]&&st[k].v==1,WHO=[["Piero","Scrum Master"],["María","Product Owner"],["Airton","Developer 1 · Front End"],["Dayron","Developer 2 · Back End"],["Patricia","Stakeholder · QA"]],ROLE_CODES=["sm","po","fe","be","qa"],ACCESS_PINS={Piero:"48216",María:"73105",Airton:"29047",Dayron:"86423",Patricia:"51698"},wid=()=>{const i=WHO.findIndex(x=>x[0]==who);return i<0?null:today()+"_u"+i},myAtt=()=>wid()?att[wid()]:null;let who="",auth=null,db=null,currentUid="",cloudReady=false,marksUnsub=null,attendanceUnsub=null,observationsUnsub=null,reviewUnsub=null;
 const sg=k=>{const x=st[k],v=x?x.v:-1;return `<span class="sg"><button class="y ${v==1?"on":""}" data-k="${k}" data-v="1" title="${v==1?"Clic para quitar":"Cumplido"}">✓</button><button class="x ${v==0?"on":""}" data-k="${k}" data-v="0" title="${v==0?"Clic para quitar":"No cumplido"}">✗</button></span>`};
@@ -338,9 +338,12 @@ async function connectCloudRole(name){const person=WHO.find(entry=>entry[0]===na
 let user=auth.currentUser;
 if(user){const currentMember=await db.collection("members").doc(user.uid).get();if(currentMember.exists&&currentMember.data().name!==name){await auth.signOut();user=null}}
 if(!user)user=(await auth.signInAnonymously()).user;
-const memberRef=db.collection("members").doc(user.uid),memberSnapshot=await memberRef.get(),role=ROLE_CODES[WHO.findIndex(entry=>entry[0]===name)];
+await user.getIdToken(true);
+const memberRef=db.collection("members").doc(user.uid),role=ROLE_CODES[WHO.findIndex(entry=>entry[0]===name)];
+let memberSnapshot;
+try{memberSnapshot=await memberRef.get()}catch(error){throw new Error(`No se pudo consultar el perfil del rol en Firestore: ${error.message}`)}
 if(memberSnapshot.exists){const member=memberSnapshot.data();if(member.active!==true||member.name!==name||member.role!==role)throw new Error("Esta sesión de navegador ya está vinculada a otro integrante. Cambia de persona e inténtalo de nuevo.")}
-else await memberRef.set({name,displayRole:person[1],role,active:true});
+else{try{await memberRef.set({name,displayRole:person[1],role,active:true})}catch(error){throw new Error(`Firestore no permitió crear el perfil de ${person[1]}: ${error.message}`)}}
 activateCloudRole(name,user)}
 function loginWithRole(event){event.preventDefault();const name=$("loginUser").value,pin=$("loginPin").value;
 if(!WHO.some(entry=>entry[0]===name)||!/^[0-9]{5}$/.test(pin)||ACCESS_PINS[name]!==pin){setAuthStatus("Nombre o PIN incorrecto.",true);return}
@@ -349,7 +352,7 @@ setAuthStatus("Conectando con la nube…");$("loginButton").disabled=true;
 connectCloudRole(name).then(()=>{$("loginPin").value="";setAuthStatus("Conectado. Los checks se compartirán en tiempo real.")})
 .catch(error=>{console.error("No se pudo iniciar sesión en Firestore.",error);setAuthStatus(`No se pudo conectar: ${error.message}`,true)})
 .finally(()=>{$("loginButton").disabled=false})}
-function handleAuthState(user){if(!user){stopCloudSubscriptions();who="";currentUid="";cloudReady=false;st={};att={};observations=[];weeklyValidations={};review={...REVIEW_FIELDS};mode="sin-sesion";setCloudStatus("Sin sesión en la nube. Conéctate para ver y guardar los checks del equipo.",true);render();maybePrompt();return}
+function handleAuthState(user){if(!user){stopCloudSubscriptions();who="";currentUid="";cloudReady=false;driveLinkReady=false;driveLinkValue="";driveLinkError="";$("dl").value="";$("dl").disabled=true;$("dgo").disabled=true;st={};att={};observations=[];weeklyValidations={};review={...REVIEW_FIELDS};mode="sin-sesion";setCloudStatus("Sin sesión en la nube. Conéctate para ver y guardar los checks del equipo.",true);render();maybePrompt();return}
 currentUid=user.uid;db.collection("members").doc(user.uid).get().then(snapshot=>{if(!snapshot.exists){mode="sin-sesion";setCloudStatus("Elige tu integrante para abrir los datos compartidos.");render();maybePrompt();return}
 const member=snapshot.data();if(member.active!==true||!WHO.some((person,i)=>person[0]===member.name&&person[1]===member.displayRole&&ROLE_CODES[i]===member.role))throw new Error("El perfil guardado en la nube no coincide con los integrantes habilitados.");
 activateCloudRole(member.name,user)}).catch(error=>{mode="error";cloudReady=false;setCloudStatus(`No se pudo validar el perfil en Firestore: ${error.message}`,true);console.error("No se pudo validar el perfil de Firestore.",error);render();maybePrompt()})}
@@ -376,11 +379,11 @@ $("exportGantt").onclick=exportGanttCsv;$("printGantt").onclick=()=>window.print
 $("th").onclick=()=>{const r=document.documentElement;r.dataset.theme=getComputedStyle(r).getPropertyValue("--bg").trim()=="#0d1324"?"light":"dark"};
 $("lg").innerHTML=ROLES.map(r=>`<span><i style="background:var(--${r[0]})"></i>${r[1]}</span>`).join("");
 
-$("dl").value=L("mk3d").u||"";$("dl").onchange=()=>{SV("mk3d",{u:$("dl").value});$("driveStatus").textContent="Enlace guardado en este navegador."};
+$("dl").disabled=true;$("dl").onchange=()=>saveDriveLink($("dl").value.trim());
 $("dgo").onclick=()=>{try{const u=new URL($("dl").value.trim());if(!["https:","http:"].includes(u.protocol))throw new Error();window.open(u.href,"_blank","noopener,noreferrer");$("driveStatus").textContent="Abriendo la carpeta de evidencias…"}catch{$("driveStatus").textContent="Pega un enlace web válido (https:// o http://) antes de abrir la carpeta."}};
 
 // Role-scoped implementations below replace the legacy demo handlers without changing checks or calendar behavior.
-var requirementApprovals={},requirementApprovalDrafts={},weeklyValidationDrafts={},teamRetrospectiveResponses={},teamRetrospectiveDraft={},teamRetrospectiveDraftUid="",requirementApprovalError="",teamRetrospectiveError="",requirementApprovalsUnsub=null,teamRetrospectiveUnsub=null;
+var requirementApprovals={},requirementApprovalDrafts={},weeklyValidationDrafts={},teamRetrospectiveResponses={},teamRetrospectiveDraft={},teamRetrospectiveDraftUid="",requirementApprovalError="",teamRetrospectiveError="",requirementApprovalsUnsub=null,teamRetrospectiveUnsub=null,requirementApprovalAutosaveTimers={},weeklyValidationAutosaveTimers={};
 var weeklyValidationEditingId="",weeklyValidationNewWeek=0,weeklyValidationBusyId="",editingObservationId="",requirementApprovalBusyId="";
 const TEAM_RETRO_QUESTIONS=[
 {key:"time",text:"El equipo gestionó el tiempo y cumplió los plazos de forma realista."},
@@ -402,9 +405,21 @@ if(!canEdit)return `<article class="approval-card"><div class="approval-heading"
 return `<form class="approval-card" data-requirement-approval="${escapeHtml(requirement.id)}"><div class="approval-heading"><b>${escapeHtml(requirement.id)} · ${escapeHtml(requirement.n)}</b><span class="chip ${status==="Aprobado"?"done":status==="Observado"?"no":"pending"}">${escapeHtml(status)}</span></div><small>Sprint ${reqSprint(index)}</small><label>Decisión<select class="approval-status" ${!cloudReady?"disabled":""}><option ${status==="Pendiente"?"selected":""}>Pendiente</option><option ${status==="Aprobado"?"selected":""}>Aprobado</option><option ${status==="Observado"?"selected":""}>Observado</option></select></label><label>Observaciones<textarea class="approval-comment" maxlength="500" rows="2" ${!cloudReady?"disabled":""} placeholder="Criterio pendiente o motivo de aceptación/observación.">${escapeHtml(comment)}</textarea></label><div class="approval-actions"><small class="validation-updated">${updated}</small><button class="pri" type="submit" ${!cloudReady||requirementApprovalBusyId===requirement.id?"disabled":""}>Guardar</button>${data.status?`<button type="button" class="danger-button" data-approval-delete="${escapeHtml(requirement.id)}" ${!cloudReady?"disabled":""}>Eliminar decisión</button>`:""}</div></form>`
 }).join("");
 }
+function scheduleRequirementApprovalAutosave(form){
+if(memberRole()!=="po"||!cloudReady)return;
+const id=form.dataset.requirementApproval;
+clearTimeout(requirementApprovalAutosaveTimers[id]);
+requirementApprovalAutosaveTimers[id]=setTimeout(()=>{
+delete requirementApprovalAutosaveTimers[id];
+if(!form.isConnected)return;
+if(requirementApprovalBusyId){scheduleRequirementApprovalAutosave(form);return}
+form.requestSubmit();
+},700)
+}
 async function saveRequirementApproval(event){
 event.preventDefault();const form=event.target.closest("form[data-requirement-approval]");if(!form)return;
 const id=form.dataset.requirementApproval,index=RF.findIndex(item=>item.id===id),status=form.querySelector(".approval-status").value,comment=form.querySelector(".approval-comment").value.trim();
+clearTimeout(requirementApprovalAutosaveTimers[id]);delete requirementApprovalAutosaveTimers[id];
 if(memberRole()!=="po"||index<0){setCloudStatus("Solo la Product Owner puede registrar aceptaciones.",true);return}
 if(requirementApprovalError){$("requirementApprovalStatus").textContent="Las reglas de Firestore todavía no permiten guardar aceptaciones.";return}
 if(!cloudReady||!currentUid){$("requirementApprovalStatus").textContent="Sin conexión a Firestore; no se guardó la decisión.";return}
@@ -412,9 +427,9 @@ if(!["Pendiente","Aprobado","Observado"].includes(status)||comment.length>500){$
 requirementApprovalDrafts[id]={status,comment};
 requirementApprovalBusyId=id;form.querySelector('button[type="submit"]').disabled=true;
 const record={requirement:id,status,comment,sprint:reqSprint(index),updatedBy:who,updatedUid:currentUid};
-try{await db.collection("aprobacionesRequisitos").doc(id).set({...record,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});requirementApprovals[id]={...record,updatedAt:new Date()};delete requirementApprovalDrafts[id];$("requirementApprovalStatus").textContent=`Decisión de ${id} guardada y sincronizada.`;renderRequirementApprovals()}
+try{await db.collection("aprobacionesRequisitos").doc(id).set({...record,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});requirementApprovals[id]={...record,updatedAt:new Date()};delete requirementApprovalDrafts[id];$("requirementApprovalStatus").textContent=`Decisión de ${id} guardada y sincronizada.`;if(!document.activeElement?.closest("#requirementApprovalList form"))renderRequirementApprovals()}
 catch(error){console.error("No se pudo guardar la aceptación del requerimiento.",error);$("requirementApprovalStatus").textContent=`No se guardó ${id}: ${error.message}`}
-finally{requirementApprovalBusyId="";form.querySelector('button[type="submit"]')?.removeAttribute("disabled")}
+finally{requirementApprovalBusyId="";form.querySelector('button[type="submit"]')?.removeAttribute("disabled");if(!document.activeElement?.closest("#requirementApprovalList form"))renderRequirementApprovals()}
 }
 async function deleteRequirementApproval(id){
 if(memberRole()!=="po"||!cloudReady||!RF_PRIORITY.includes(id)){setCloudStatus("No tienes permiso para eliminar esta decisión.",true);return}
@@ -450,14 +465,29 @@ const addButton=canEdit&&records.length>0&&!newOpen&&!editOpen?`<button type="bu
 return `<div class="validation-week-group"><div class="validation-group-heading"><h3>Semana ${week}</h3><span>${records.length} ${records.length===1?"registro":"registros"}</span></div>${cards}${newForm}${addButton||(!records.length&&!canEdit&&!cards?"<p class=\"empty-state\">La stakeholder aún no registra pruebas para esta semana.</p>":"")}</div>`
 }).join("");
 }
+function scheduleWeeklyValidationAutosave(form){
+if(memberRole()!=="qa"||!cloudReady)return;
+const key=form.dataset.validationRecord||`week-${String(form.dataset.validationWeek).padStart(2,"0")}-new`;
+clearTimeout(weeklyValidationAutosaveTimers[key]);
+weeklyValidationAutosaveTimers[key]=setTimeout(()=>{
+delete weeklyValidationAutosaveTimers[key];
+if(!form.isConnected)return;
+if(weeklyValidationBusyId){scheduleWeeklyValidationAutosave(form);return}
+if(!form.querySelector(".validation-tests").value.trim())return;
+$("weeklyValidationStatus").textContent="Sincronizando los cambios de la Stakeholder…";
+form.dataset.autosave="true";form.requestSubmit();delete form.dataset.autosave;
+},700)
+}
 async function saveWeeklyValidation(event){
 event.preventDefault();const form=event.target.closest("form[data-validation-week]");if(!form)return;
-const week=Number(form.dataset.validationWeek),recordId=form.dataset.validationRecord,weekId=`week-${String(week).padStart(2,"0")}`,status=$("weeklyValidationStatus");
+const keepEditing=form.dataset.autosave==="true",week=Number(form.dataset.validationWeek),recordId=form.dataset.validationRecord,weekId=`week-${String(week).padStart(2,"0")}`,status=$("weeklyValidationStatus");
+const busyId=recordId||`${weekId}-new`;clearTimeout(weeklyValidationAutosaveTimers[busyId]);delete weeklyValidationAutosaveTimers[busyId];
 if(memberRole()!=="qa"){status.textContent="Solo la Stakeholder puede guardar validaciones semanales.";return}
 if(!cloudReady||!currentUid){status.textContent="La conexión a Firestore no está disponible; no se guardaron los cambios.";return}
 const title=form.querySelector(".validation-title").value.trim(),testSummary=form.querySelector(".validation-tests").value.trim(),observation=form.querySelector(".validation-observation").value.trim();
 if(!Number.isInteger(week)||week<1||week>15||!title||title.length>120||!testSummary||testSummary.length>2000||observation.length>1000){status.textContent="Completa el título (máx. 120), las pruebas (máx. 2000) y revisa las observaciones (máx. 1000).";return}
-const busyId=recordId||`${weekId}-new`;weeklyValidationBusyId=busyId;const data={week,validated:form.querySelector(".validation-check").checked,testSummary,observation,updatedBy:who,updatedUid:currentUid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+if(weeklyValidationBusyId){scheduleWeeklyValidationAutosave(form);return}
+weeklyValidationBusyId=busyId;const data={week,validated:form.querySelector(".validation-check").checked,testSummary,observation,updatedBy:who,updatedUid:currentUid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
 if(!recordId||recordId.includes("-entry-")||weeklyValidations[recordId]?.title)data.title=title;
 form.querySelector('button[type="submit"]').disabled=true;status.textContent=`Guardando la preparación de la semana ${week}…`;
 try{
@@ -465,9 +495,13 @@ let targetId=recordId;
 if(recordId)await db.collection("validacionesSemanales").doc(recordId).update(data);
 else{const ref=db.collection("validacionesSemanales").doc();targetId=`${weekId}-entry-${ref.id}`;await db.collection("validacionesSemanales").doc(targetId).set(data)}
 weeklyValidations[targetId]={...data,updatedAt:new Date()};
-delete weeklyValidationDrafts[busyId];weeklyValidationEditingId="";weeklyValidationNewWeek=0;status.textContent=`Preparación de la semana ${week} guardada y sincronizada con el equipo.`;renderStakeholderValidation(true)
+delete weeklyValidationDrafts[busyId];
+if(keepEditing){weeklyValidationEditingId=targetId;weeklyValidationNewWeek=0;form.dataset.validationRecord=targetId}
+else{weeklyValidationEditingId="";weeklyValidationNewWeek=0}
+status.textContent=`Preparación de la semana ${week} guardada y sincronizada con el equipo.`;
+if(!keepEditing||!document.activeElement?.closest("#weeklyValidationList form"))renderStakeholderValidation(true)
 }catch(error){console.error("No se pudo guardar la validación semanal.",error);status.textContent=`No se guardó la validación de la semana ${week}: ${error.message}`}
-finally{weeklyValidationBusyId=""}
+finally{weeklyValidationBusyId="";if(!document.activeElement?.closest("#weeklyValidationList form"))renderStakeholderValidation(true)}
 }
 async function updateObservation(noteId,action){
 const note=observations.find(item=>item.id===noteId),role=memberRole();
@@ -545,17 +579,41 @@ function render(){
 rfHtml();rnfHtml();ganttHtml();rolesHtml();cerHtml();teamHtml();stats();banner();panel();renderObservations();renderRequirementApprovals();renderReview();$("teacherReviewNav").hidden=memberRole()!=="sm";renderStakeholderValidation();renderTeamRetrospective();if(!$("mdc").hidden)calHtml()
 }
 function stopCloudSubscriptions(){
-if(marksUnsub)marksUnsub();if(attendanceUnsub)attendanceUnsub();if(observationsUnsub)observationsUnsub();if(reviewUnsub)reviewUnsub();if(weeklyValidationUnsub)weeklyValidationUnsub();if(requirementApprovalsUnsub)requirementApprovalsUnsub();if(teamRetrospectiveUnsub)teamRetrospectiveUnsub();
-marksUnsub=null;attendanceUnsub=null;observationsUnsub=null;reviewUnsub=null;weeklyValidationUnsub=null;requirementApprovalsUnsub=null;teamRetrospectiveUnsub=null
+if(marksUnsub)marksUnsub();if(attendanceUnsub)attendanceUnsub();if(observationsUnsub)observationsUnsub();if(reviewUnsub)reviewUnsub();if(weeklyValidationUnsub)weeklyValidationUnsub();if(requirementApprovalsUnsub)requirementApprovalsUnsub();if(teamRetrospectiveUnsub)teamRetrospectiveUnsub();if(driveLinkUnsub)driveLinkUnsub();
+Object.values(requirementApprovalAutosaveTimers).forEach(clearTimeout);Object.values(weeklyValidationAutosaveTimers).forEach(clearTimeout);requirementApprovalAutosaveTimers={};weeklyValidationAutosaveTimers={};
+marksUnsub=null;attendanceUnsub=null;observationsUnsub=null;reviewUnsub=null;weeklyValidationUnsub=null;requirementApprovalsUnsub=null;teamRetrospectiveUnsub=null;driveLinkUnsub=null
+}
+function validDriveUrl(value){try{const url=new URL(value);return ["https:","http:"].includes(url.protocol)&&!url.username&&!url.password&&value.length<=1900}catch{return false}}
+function renderDriveLink(){
+$("dl").value=driveLinkValue;$("dl").disabled=memberRole()!=="sm"||!cloudReady;$("dgo").disabled=!driveLinkValue;
+if(driveLinkError)$("driveStatus").textContent=`No se pudo sincronizar el enlace de Drive: ${driveLinkError}`;
+else if(!driveLinkValue)$("driveStatus").textContent=memberRole()==="sm"?"Aún no hay un enlace compartido. El Scrum Master puede agregarlo.":"El Scrum Master aún no ha compartido un enlace de Drive.";
+else $("driveStatus").textContent=memberRole()==="sm"?"Enlace compartido en Firestore.":"Enlace compartido por el Scrum Master."
+}
+async function saveDriveLink(value,migrateLegacy=false){
+if(memberRole()!=="sm"){$("driveStatus").textContent="Solo el Scrum Master puede cambiar el enlace de evidencias.";return}
+if(!cloudReady&&!migrateLegacy){$("driveStatus").textContent="Conéctate a Firestore antes de guardar el enlace.";return}
+if(!validDriveUrl(value)){$("driveStatus").textContent="Ingresa un enlace http(s) válido de Drive (máx. 1900 caracteres).";return}
+const url=value.trim();$("dl").disabled=true;$("driveStatus").textContent=migrateLegacy?"Migrando el enlace anterior a Firestore…":"Guardando el enlace compartido…";
+try{await db.collection("projectSettings").doc("drive-evidence").set({url,updatedBy:who,updatedUid:currentUid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});driveLinkError="";driveLinkValue=url;$("driveStatus").textContent="Enlace guardado y sincronizado en Firestore."}
+catch(error){driveLinkError=error.message;console.error("No se pudo guardar el enlace de Drive en Firestore.",error);$("driveStatus").textContent=`No se guardó el enlace en Firestore: ${error.message}`}
+finally{$("dl").disabled=memberRole()!=="sm"||!cloudReady}
 }
 function subscribeCloudData(){
 stopCloudSubscriptions();cloudReady=false;
 requirementApprovalError="";teamRetrospectiveError="";
 let marksReady=false,attendanceReady=false,observationsReady=!["po","fe","be"].includes(memberRole()),reviewReady=memberRole()!=="sm",weeklyValidationReady=false;
+driveLinkReady=false;driveLinkError="";
 const uid=currentUid,role=memberRole();
 setCloudStatus("Cargando la información compartida desde Firestore…");
-const ready=()=>{if(!marksReady||!attendanceReady||!observationsReady||!reviewReady||!weeklyValidationReady)return;cloudReady=true;setCloudStatus(`Conectado a Firestore · ${who} · cambios sincronizados en tiempo real.`);render()};
+const ready=()=>{if(!marksReady||!attendanceReady||!observationsReady||!reviewReady||!weeklyValidationReady||!driveLinkReady)return;cloudReady=true;setCloudStatus(`Conectado a Firestore · ${who} · cambios sincronizados en tiempo real.`);render();renderDriveLink()};
 const failed=(label,error)=>{cloudReady=false;console.error(label,error);setCloudStatus(`${label}: ${error.message}`,true);render()};
+driveLinkUnsub=db.collection("projectSettings").doc("drive-evidence").onSnapshot(snapshot=>{
+if(snapshot.exists){driveLinkValue=snapshot.data().url||"";driveLinkReady=true;renderDriveLink();ready();return}
+driveLinkValue="";const legacyUrl=role==="sm"?L("mk3d").u:"";
+if(role==="sm"&&legacyUrl&&validDriveUrl(legacyUrl)){driveLinkReady=false;saveDriveLink(legacyUrl,true).then(()=>{driveLinkReady=true;ready();renderDriveLink()})}
+else{driveLinkReady=true;renderDriveLink();ready()}
+},error=>{driveLinkError=error.message;driveLinkReady=true;console.error("No se pudo leer el enlace de Drive desde Firestore.",error);renderDriveLink();ready()});
 attendanceUnsub=db.collection("asist").onSnapshot(snapshot=>{att={};snapshot.forEach(doc=>{att[doc.id]=doc.data()});attendanceReady=true;render();ready()},error=>failed("No se pudieron leer las asistencias",error));
 if(["po","fe","be"].includes(role)){
 let query=db.collection("observaciones");
@@ -565,8 +623,8 @@ observationsUnsub=query.onSnapshot(snapshot=>{observations=snapshot.docs.map(doc
 if(role==="sm")reviewUnsub=db.collection("evaluaciones").doc(REVIEW_ID).onSnapshot(snapshot=>{review=snapshot.exists?{...REVIEW_FIELDS,...snapshot.data()}:{...REVIEW_FIELDS};populateReview();reviewReady=true;render();ready()},error=>failed("No se pudo leer la evaluación docente",error));
 else review={...REVIEW_FIELDS};
 const weeklyValidationCollection=db.collection("validacionesSemanales"),weeklyValidationQuery=role==="qa"?weeklyValidationCollection:weeklyValidationCollection.where("validated","==",true);
-weeklyValidationUnsub=weeklyValidationQuery.onSnapshot(snapshot=>{weeklyValidations={};snapshot.forEach(doc=>{weeklyValidations[doc.id]=doc.data()});weeklyValidationReady=true;renderStakeholderValidation(true);ready()},error=>failed("No se pudieron leer las validaciones semanales",error));
-if(["po","fe","be"].includes(role))requirementApprovalsUnsub=db.collection("aprobacionesRequisitos").onSnapshot(snapshot=>{requirementApprovalError="";requirementApprovals={};snapshot.forEach(doc=>{requirementApprovals[doc.id]=doc.data()});renderRequirementApprovals()},error=>{requirementApprovalError=error.message;requirementApprovals={};console.error("No se pudieron leer las aceptaciones de requerimientos.",error);renderRequirementApprovals()});
+weeklyValidationUnsub=weeklyValidationQuery.onSnapshot(snapshot=>{weeklyValidations={};snapshot.forEach(doc=>{weeklyValidations[doc.id]=doc.data()});weeklyValidationReady=true;if(!document.activeElement?.closest("#weeklyValidationList form")&&!weeklyValidationBusyId)renderStakeholderValidation(true);ready()},error=>failed("No se pudieron leer las validaciones semanales",error));
+if(["po","fe","be"].includes(role))requirementApprovalsUnsub=db.collection("aprobacionesRequisitos").onSnapshot(snapshot=>{requirementApprovalError="";requirementApprovals={};snapshot.forEach(doc=>{requirementApprovals[doc.id]=doc.data()});if(!document.activeElement?.closest("#requirementApprovalList form")&&!requirementApprovalBusyId)renderRequirementApprovals()},error=>{requirementApprovalError=error.message;requirementApprovals={};console.error("No se pudieron leer las aceptaciones de requerimientos.",error);renderRequirementApprovals()});
 else requirementApprovals={};
 teamRetrospectiveUnsub=db.collection("retrospectivaLikert").onSnapshot(snapshot=>{teamRetrospectiveError="";teamRetrospectiveResponses={};snapshot.forEach(doc=>{teamRetrospectiveResponses[doc.id]=doc.data()});renderTeamRetrospective()},error=>{teamRetrospectiveError=error.message;teamRetrospectiveResponses={};console.error("No se pudo leer la retroalimentación del equipo.",error);renderTeamRetrospective()});
 ensureProjectChecksReset().then(()=>{if(currentUid!==uid)return;marksUnsub=db.collection("marks").onSnapshot(snapshot=>{st={};snapshot.forEach(doc=>{st[doc.id]=doc.data()});marksReady=true;render();ready()},error=>failed("No se pudieron leer los checks en la nube",error))}).catch(error=>failed("No se pudieron cargar las marcas existentes",error))
@@ -589,10 +647,10 @@ return
 const approval=event.target.closest("[data-approval-delete]");if(approval)deleteRequirementApproval(approval.dataset.approvalDelete)
 });
 $("requirementApprovalList").addEventListener("submit",saveRequirementApproval);
-$("requirementApprovalList").addEventListener("input",event=>{const form=event.target.closest("form[data-requirement-approval]");if(form)requirementApprovalDrafts[form.dataset.requirementApproval]={status:form.querySelector(".approval-status").value,comment:form.querySelector(".approval-comment").value}});
-$("requirementApprovalList").addEventListener("change",event=>{const form=event.target.closest("form[data-requirement-approval]");if(form)requirementApprovalDrafts[form.dataset.requirementApproval]={status:form.querySelector(".approval-status").value,comment:form.querySelector(".approval-comment").value}});
-$("weeklyValidationList").addEventListener("input",event=>{const form=event.target.closest("form[data-validation-week]");if(form){const key=form.dataset.validationRecord||`week-${String(form.dataset.validationWeek).padStart(2,"0")}-new`;weeklyValidationDrafts[key]={title:form.querySelector(".validation-title").value,testSummary:form.querySelector(".validation-tests").value,observation:form.querySelector(".validation-observation").value,validated:form.querySelector(".validation-check").checked}}});
-$("weeklyValidationList").addEventListener("change",event=>{const form=event.target.closest("form[data-validation-week]");if(form){const key=form.dataset.validationRecord||`week-${String(form.dataset.validationWeek).padStart(2,"0")}-new`;weeklyValidationDrafts[key]={title:form.querySelector(".validation-title").value,testSummary:form.querySelector(".validation-tests").value,observation:form.querySelector(".validation-observation").value,validated:form.querySelector(".validation-check").checked}}});
+$("requirementApprovalList").addEventListener("input",event=>{const form=event.target.closest("form[data-requirement-approval]");if(form){requirementApprovalDrafts[form.dataset.requirementApproval]={status:form.querySelector(".approval-status").value,comment:form.querySelector(".approval-comment").value};scheduleRequirementApprovalAutosave(form)}});
+$("requirementApprovalList").addEventListener("change",event=>{const form=event.target.closest("form[data-requirement-approval]");if(form){requirementApprovalDrafts[form.dataset.requirementApproval]={status:form.querySelector(".approval-status").value,comment:form.querySelector(".approval-comment").value};scheduleRequirementApprovalAutosave(form)}});
+$("weeklyValidationList").addEventListener("input",event=>{const form=event.target.closest("form[data-validation-week]");if(form){const key=form.dataset.validationRecord||`week-${String(form.dataset.validationWeek).padStart(2,"0")}-new`;weeklyValidationDrafts[key]={title:form.querySelector(".validation-title").value,testSummary:form.querySelector(".validation-tests").value,observation:form.querySelector(".validation-observation").value,validated:form.querySelector(".validation-check").checked};scheduleWeeklyValidationAutosave(form)}});
+$("weeklyValidationList").addEventListener("change",event=>{const form=event.target.closest("form[data-validation-week]");if(form){const key=form.dataset.validationRecord||`week-${String(form.dataset.validationWeek).padStart(2,"0")}-new`;weeklyValidationDrafts[key]={title:form.querySelector(".validation-title").value,testSummary:form.querySelector(".validation-tests").value,observation:form.querySelector(".validation-observation").value,validated:form.querySelector(".validation-check").checked};scheduleWeeklyValidationAutosave(form)}});
 $("teamRetrospectiveForm").addEventListener("change",event=>{const input=event.target;if(input.matches('input[type="radio"]'))teamRetrospectiveDraft[input.name]=Number(input.value)});
 $("teamRetrospectiveForm").addEventListener("submit",saveTeamRetrospective);
 $("cancelObservationEdit").addEventListener("click",()=>updateObservation(editingObservationId,"cancel-edit"));

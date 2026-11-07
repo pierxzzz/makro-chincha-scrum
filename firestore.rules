@@ -40,19 +40,6 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/members/$(request.auth.uid)).data;
     }
 
-    function isValidMember(data) {
-      return data.keys().hasAll(['name', 'displayRole', 'role', 'active'])
-        && data.keys().hasOnly(['name', 'displayRole', 'role', 'active'])
-        && data.active == true
-        && (
-          (data.name == 'Piero' && data.displayRole == 'Scrum Master' && data.role == 'sm')
-          || (data.name == 'María' && data.displayRole == 'Product Owner' && data.role == 'po')
-          || (data.name == 'Airton' && data.displayRole == 'Developer 1 · Front End' && data.role == 'fe')
-          || (data.name == 'Dayron' && data.displayRole == 'Developer 2 · Back End' && data.role == 'be')
-          || (data.name == 'Patricia' && data.displayRole == 'Stakeholder · QA' && data.role == 'qa')
-        );
-    }
-
     function roleMatchesIndex(attendanceId) {
       return (member().role == 'sm' && attendanceId.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}_u0$'))
         || (member().role == 'po' && attendanceId.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}_u1$'))
@@ -306,11 +293,59 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
     }
 
+    function validDriveLink() {
+      return request.resource.data.keys().hasAll([
+          'url', 'updatedBy', 'updatedUid', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'url', 'updatedBy', 'updatedUid', 'updatedAt'
+        ])
+        && request.resource.data.url is string
+        && request.resource.data.url.size() > 10
+        && request.resource.data.url.size() <= 1900
+        && request.resource.data.url.matches('^https?://.+$')
+        && request.resource.data.updatedBy == member().name
+        && member().role == 'sm'
+        && request.resource.data.updatedUid == request.auth.uid
+        && request.resource.data.updatedAt == request.time;
+    }
+
     match /members/{uid} {
       allow get: if isOwner(uid);
       allow list: if false;
-      allow create: if isAnonymous() && isOwner(uid) && isValidMember(request.resource.data);
+      allow create: if isAnonymous()
+        && isOwner(uid)
+        && request.resource.data.keys().hasAll(['name', 'displayRole', 'role', 'active'])
+        && request.resource.data.keys().hasOnly(['name', 'displayRole', 'role', 'active'])
+        && request.resource.data.active == true
+        && (
+          (request.resource.data.name == 'Piero'
+            && request.resource.data.displayRole == 'Scrum Master'
+            && request.resource.data.role == 'sm')
+          || (request.resource.data.name == 'María'
+            && request.resource.data.displayRole == 'Product Owner'
+            && request.resource.data.role == 'po')
+          || (request.resource.data.name == 'Airton'
+            && request.resource.data.displayRole == 'Developer 1 · Front End'
+            && request.resource.data.role == 'fe')
+          || (request.resource.data.name == 'Dayron'
+            && request.resource.data.displayRole == 'Developer 2 · Back End'
+            && request.resource.data.role == 'be')
+          || (request.resource.data.name == 'Patricia'
+            && request.resource.data.displayRole == 'Stakeholder · QA'
+            && request.resource.data.role == 'qa')
+        );
       allow update, delete: if false;
+    }
+
+    match /projectSettings/{settingId} {
+      allow get: if isActiveMember() && settingId == 'drive-evidence';
+      allow list: if false;
+      allow create, update: if isActiveMember()
+        && settingId == 'drive-evidence'
+        && member().role == 'sm'
+        && validDriveLink();
+      allow delete: if false;
     }
 
     match /marks/{markId} {
