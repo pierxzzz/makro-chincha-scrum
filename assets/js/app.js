@@ -384,7 +384,7 @@ $("dgo").onclick=()=>{try{const u=new URL($("dl").value.trim());if(!["https:","h
 
 // Role-scoped implementations below replace the legacy demo handlers without changing checks or calendar behavior.
 var requirementApprovals={},requirementApprovalDrafts={},weeklyValidationDrafts={},teamRetrospectiveResponses={},teamRetrospectiveDraft={},teamRetrospectiveDraftUid="",requirementApprovalError="",teamRetrospectiveError="",requirementApprovalsUnsub=null,teamRetrospectiveUnsub=null,requirementApprovalAutosaveTimers={},weeklyValidationAutosaveTimers={};
-var weeklyValidationEditingId="",weeklyValidationNewWeek=0,weeklyValidationBusyId="",editingObservationId="",requirementApprovalBusyId="";
+var weeklyValidationBusyId="",editingObservationId="",requirementApprovalBusyId="";
 const TEAM_RETRO_QUESTIONS=[
 {key:"time",text:"El equipo gestionó el tiempo y cumplió los plazos de forma realista."},
 {key:"improvements",text:"Las mejoras acordadas durante el trabajo se llevaron a la práctica."},
@@ -443,26 +443,26 @@ const signedIn=Boolean(who),canEdit=memberRole()==="qa";
 $("stakeholderNav").hidden=!signedIn;$("stakeholderValidation").hidden=!signedIn;
 if(!signedIn)return;
 const container=$("weeklyValidationList");
-if(!cloudReady){container.innerHTML='<p class="empty-state">Conéctate a Firestore para consultar las validaciones semanales del equipo.</p>';return}
+if(!cloudReady){container.innerHTML='<p class="empty-state">Inicia sesión para consultar o registrar la validación semanal del equipo.</p>';return}
 if(!force&&container.dataset.loaded==="true")return;
 container.dataset.loaded="true";
-const makeForm=(week,data={},recordId="",cancelable=false)=>{
-const id=escapeHtml(recordId),key=recordId||`week-${String(week).padStart(2,"0")}-new`,draft=weeklyValidationDrafts[key]||{},value={...data,...draft},title=value.title||"Validación semanal",titleLocked=Boolean(recordId&&!recordId.includes("-entry-")&&!data.title);
-return `<form class="validation-week" data-validation-week="${week}" data-validation-record="${id}"><div class="validation-week-heading"><b>Semana ${week} · ${escapeHtml(ph(week))}</b><label><input class="validation-check" type="checkbox" ${value.validated===true?"checked":""}> Pruebas validadas</label></div><label>Título de la prueba<textarea class="validation-title" maxlength="120" rows="1" placeholder="Ej.: Preparación, borrador, prototipo o cierre" ${titleLocked?"disabled":""}>${escapeHtml(title)}</textarea></label><label>Pruebas realizadas y resultados<textarea class="validation-tests" maxlength="2000" rows="4" placeholder="Describe qué se probó, el resultado obtenido y si pasó correctamente." required>${escapeHtml(value.testSummary||"")}</textarea></label><label>Observaciones y seguimiento<textarea class="validation-observation" maxlength="1000" rows="3" placeholder="Anota hallazgos, pendientes o acciones acordadas.">${escapeHtml(value.observation||"")}</textarea></label><div class="validation-week-footer"><small>${data.updatedBy?`Actualizado por ${escapeHtml(data.updatedBy)} · ${escapeHtml(recordTime(data))}`:"Nueva preparación"}</small><div class="validation-actions"><button class="pri" type="submit" ${!cloudReady||weeklyValidationBusyId===key?"disabled":""}>Guardar</button>${cancelable?'<button type="button" data-validation-action="cancel">Cancelar</button>':""}</div></div></form>`
+const weekRecords=week=>Object.entries(weeklyValidations).filter(([,data])=>Number(data.week)===week).map(([id,data])=>({id,data})).sort((a,b)=>(eventDate(b.data)?.getTime()||0)-(eventDate(a.data)?.getTime()||0));
+const makeHistory=(records,activeId)=>{
+const previous=records.filter(record=>record.id!==activeId);
+if(!previous.length)return "";
+return `<details class="validation-history"><summary>Historial anterior conservado (${previous.length})</summary>${previous.map(({data})=>`<article><b>${escapeHtml(data.title||"Registro semanal")}</b><p><strong>Pruebas</strong><br>${escapeHtml(data.testSummary||"Sin pruebas descritas.")}</p><p><strong>Observaciones</strong><br>${escapeHtml(data.observation||"Sin observaciones registradas.")}</p><small>${data.validated===true?"Validada":"Pendiente"} · ${escapeHtml(data.updatedBy||"")} · ${escapeHtml(recordTime(data))}</small></article>`).join("")}</details>`
+};
+const makeForm=(week,data={})=>{
+const id=`week-${String(week).padStart(2,"0")}`,draft=weeklyValidationDrafts[id]||{},value={...data,...draft};
+return `<form class="validation-week" data-validation-week="${week}" data-validation-record="${id}"><div class="validation-week-heading"><b>Semana ${week} · ${escapeHtml(ph(week))}</b><span class="validation-result ${value.validated===true?"approved":""}">${value.validated===true?"✓ Autorizada":"Pendiente de autorización"}</span></div><label>Título de la prueba<textarea class="validation-title" maxlength="120" rows="1" placeholder="Nombre breve de la prueba">${escapeHtml(value.title||"")}</textarea></label><label>Pruebas realizadas y resultados<textarea class="validation-tests" maxlength="2000" rows="4" placeholder="Describe qué probaste y el resultado obtenido." required>${escapeHtml(value.testSummary||"")}</textarea></label><label>Observaciones de la Stakeholder<textarea class="validation-observation" maxlength="1000" rows="3" placeholder="Hallazgos, comentarios o acciones acordadas.">${escapeHtml(value.observation||"")}</textarea></label><div class="validation-week-heading"><label><input class="validation-check" type="checkbox" ${value.validated===true?"checked":""}> Prueba realizada y autorizada por mí, Stakeholder</label></div><div class="validation-week-footer"><small>${data.updatedBy?`Validación actualizada por ${escapeHtml(data.updatedBy)} · ${escapeHtml(recordTime(data))}`:"Aún no registrada"}</small><div class="validation-actions"><button class="pri" type="submit" ${!cloudReady||weeklyValidationBusyId===id?"disabled":""}>Guardar validación</button><button type="button" class="danger-button" data-validation-action="delete" data-validation-id="${id}" ${!cloudReady||!weeklyValidations[id]?"disabled":""}>Eliminar semana</button></div></div></form>`
 };
 container.innerHTML=Array.from({length:15},(_,index)=>{
-const week=index+1,records=Object.entries(weeklyValidations).filter(([,data])=>Number(data.week)===week).map(([id,data])=>({id,data})).sort((a,b)=>(eventDate(b.data)?.getTime()||0)-(eventDate(a.data)?.getTime()||0));
-const cards=records.map(({id,data})=>{
-if(canEdit&&weeklyValidationEditingId===id)return makeForm(week,data,id,true);
-const updated=data.updatedBy?`Actualizado por ${escapeHtml(data.updatedBy)} · ${escapeHtml(recordTime(data))}`:"Sin fecha registrada";
-const actions=canEdit?`<div class="validation-actions"><button type="button" data-validation-action="edit" data-validation-id="${escapeHtml(id)}" ${!cloudReady?"disabled":""}>Editar</button><button type="button" class="danger-button" data-validation-action="delete" data-validation-id="${escapeHtml(id)}" ${!cloudReady?"disabled":""}>Eliminar</button></div>`:"";
-return `<article class="validation-week ${data.validated===true?"validation-approved":""}"><div class="validation-week-heading"><b>Semana ${week} · ${escapeHtml(ph(week))}</b><span class="validation-result ${data.validated===true?"approved":""}">${data.validated===true?"✓ Validada":"Pendiente"}</span></div><h3 class="validation-title-display">${escapeHtml(data.title||"Validación semanal")}</h3><p><strong>Pruebas realizadas y resultados</strong><br>${data.testSummary?escapeHtml(data.testSummary):"Sin pruebas descritas."}</p><p><strong>Observaciones y seguimiento</strong><br>${data.observation?escapeHtml(data.observation):"Sin observaciones registradas."}</p><small class="validation-updated">${updated}</small>${actions}</article>`
-}).join("");
-const editOpen=weeklyValidationEditingId&&records.some(record=>record.id===weeklyValidationEditingId),newOpen=weeklyValidationNewWeek===week;
-const showInitial=canEdit&&records.length===0&&!editOpen;
-const newForm=canEdit&&(newOpen||showInitial)?makeForm(week,{}, "",records.length>0):"";
-const addButton=canEdit&&records.length>0&&!newOpen&&!editOpen?`<button type="button" class="validation-add" data-validation-action="new" data-validation-week="${week}">＋ Nueva preparación para semana ${week}</button>`:"";
-return `<div class="validation-week-group"><div class="validation-group-heading"><h3>Semana ${week}</h3><span>${records.length} ${records.length===1?"registro":"registros"}</span></div>${cards}${newForm}${addButton||(!records.length&&!canEdit&&!cards?"<p class=\"empty-state\">La stakeholder aún no registra pruebas para esta semana.</p>":"")}</div>`
+const week=index+1,id=`week-${String(week).padStart(2,"0")}`,records=weekRecords(week),legacyRecords=records.filter(record=>record.id!==id),current=weeklyValidations[id]||null;
+if(canEdit)return `<div class="validation-week-group"><div class="validation-group-heading"><h3>Semana ${week}</h3><span>${current?"Validación registrada":"Sin validación"}</span></div>${makeForm(week,current||{})}${makeHistory(legacyRecords,"")}</div>`;
+const visible=current||records.find(record=>record.data.validated===true)?.data;
+const card=visible?`<article class="validation-week validation-approved"><div class="validation-week-heading"><b>Semana ${week} · ${escapeHtml(ph(week))}</b><span class="validation-result approved">✓ Validada por ${escapeHtml(visible.updatedBy||"Stakeholder")}</span></div><h3 class="validation-title-display">${escapeHtml(visible.title||"Prueba semanal")}</h3><p><strong>Pruebas realizadas y resultados</strong><br>${escapeHtml(visible.testSummary||"Sin pruebas descritas.")}</p><p><strong>Observaciones de la Stakeholder</strong><br>${escapeHtml(visible.observation||"Sin observaciones registradas.")}</p><small class="validation-updated">${escapeHtml(recordTime(visible))}</small></article>`:`<article class="validation-week"><div class="validation-week-heading"><b>Semana ${week} · ${escapeHtml(ph(week))}</b><span class="validation-result">Pendiente de autorización</span></div><p>La Stakeholder aún no ha autorizado una prueba para esta semana.</p></article>`;
+const activeId=current?id:records.find(record=>record.data.validated===true)?.id;
+return `<div class="validation-week-group"><div class="validation-group-heading"><h3>Semana ${week}</h3></div>${card}${makeHistory(legacyRecords,activeId||"")}</div>`
 }).join("");
 }
 function scheduleWeeklyValidationAutosave(form){
@@ -480,28 +480,25 @@ form.dataset.autosave="true";form.requestSubmit();delete form.dataset.autosave;
 }
 async function saveWeeklyValidation(event){
 event.preventDefault();const form=event.target.closest("form[data-validation-week]");if(!form)return;
-const keepEditing=form.dataset.autosave==="true",week=Number(form.dataset.validationWeek),recordId=form.dataset.validationRecord,weekId=`week-${String(week).padStart(2,"0")}`,status=$("weeklyValidationStatus");
-const busyId=recordId||`${weekId}-new`;clearTimeout(weeklyValidationAutosaveTimers[busyId]);delete weeklyValidationAutosaveTimers[busyId];
+const keepEditing=form.dataset.autosave==="true",week=Number(form.dataset.validationWeek),weekId=`week-${String(week).padStart(2,"0")}`,status=$("weeklyValidationStatus");
+clearTimeout(weeklyValidationAutosaveTimers[weekId]);delete weeklyValidationAutosaveTimers[weekId];
 if(memberRole()!=="qa"){status.textContent="Solo la Stakeholder puede guardar validaciones semanales.";return}
 if(!cloudReady||!currentUid){status.textContent="La conexión a Firestore no está disponible; no se guardaron los cambios.";return}
 const title=form.querySelector(".validation-title").value.trim(),testSummary=form.querySelector(".validation-tests").value.trim(),observation=form.querySelector(".validation-observation").value.trim();
-if(!Number.isInteger(week)||week<1||week>15||!title||title.length>120||!testSummary||testSummary.length>2000||observation.length>1000){status.textContent="Completa el título (máx. 120), las pruebas (máx. 2000) y revisa las observaciones (máx. 1000).";return}
+if(!Number.isInteger(week)||week<1||week>15||title.length>120||!testSummary||testSummary.length>2000||observation.length>1000){status.textContent="Describe las pruebas (máx. 2000 caracteres) y revisa el título (máx. 120) y las observaciones (máx. 1000).";return}
 if(weeklyValidationBusyId){scheduleWeeklyValidationAutosave(form);return}
-weeklyValidationBusyId=busyId;const data={week,validated:form.querySelector(".validation-check").checked,testSummary,observation,updatedBy:who,updatedUid:currentUid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
-if(!recordId||recordId.includes("-entry-")||weeklyValidations[recordId]?.title)data.title=title;
+weeklyValidationBusyId=weekId;const existing=weeklyValidations[weekId]||{},data={week,validated:form.querySelector(".validation-check").checked,testSummary,observation,updatedBy:who,updatedUid:currentUid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+if(title||existing.title)data.title=title||existing.title;
 form.querySelector('button[type="submit"]').disabled=true;status.textContent=`Guardando la preparación de la semana ${week}…`;
 try{
-let targetId=recordId;
-if(recordId)await db.collection("validacionesSemanales").doc(recordId).update(data);
-else{const ref=db.collection("validacionesSemanales").doc();targetId=`${weekId}-entry-${ref.id}`;await db.collection("validacionesSemanales").doc(targetId).set(data)}
-weeklyValidations[targetId]={...data,updatedAt:new Date()};
-delete weeklyValidationDrafts[busyId];
-if(keepEditing){weeklyValidationEditingId=targetId;weeklyValidationNewWeek=0;form.dataset.validationRecord=targetId}
-else{weeklyValidationEditingId="";weeklyValidationNewWeek=0}
-status.textContent=`Preparación de la semana ${week} guardada y sincronizada con el equipo.`;
+await db.collection("validacionesSemanales").doc(weekId).set(data);
+weeklyValidations[weekId]={...data,updatedAt:new Date()};
+form.querySelector('[data-validation-action="delete"]')?.removeAttribute("disabled");
+delete weeklyValidationDrafts[weekId];
+status.textContent=`Validación de la semana ${week} guardada${data.validated?" y autorizada":""}.`;
 if(!keepEditing||!document.activeElement?.closest("#weeklyValidationList form"))renderStakeholderValidation(true)
 }catch(error){console.error("No se pudo guardar la validación semanal.",error);status.textContent=`No se guardó la validación de la semana ${week}: ${error.message}`}
-finally{weeklyValidationBusyId="";if(!document.activeElement?.closest("#weeklyValidationList form"))renderStakeholderValidation(true)}
+finally{weeklyValidationBusyId="";form.querySelector('button[type="submit"]')?.removeAttribute("disabled");if(!document.activeElement?.closest("#weeklyValidationList form"))renderStakeholderValidation(true)}
 }
 async function updateObservation(noteId,action){
 const note=observations.find(item=>item.id===noteId),role=memberRole();
@@ -632,16 +629,12 @@ ensureProjectChecksReset().then(()=>{if(currentUid!==uid)return;marksUnsub=db.co
 document.addEventListener("click",event=>{
 const button=event.target.closest("[data-validation-action]");
 if(button){
-const action=button.dataset.validationAction,id=button.dataset.validationId,week=Number(button.dataset.validationWeek);
-if(action==="new"){weeklyValidationEditingId="";weeklyValidationNewWeek=week;renderStakeholderValidation(true)}
-if(action==="edit"){weeklyValidationEditingId=id;weeklyValidationNewWeek=0;renderStakeholderValidation(true)}
-if(action==="cancel"){const form=button.closest("form[data-validation-week]");if(form){const key=form.dataset.validationRecord||`week-${String(form.dataset.validationWeek).padStart(2,"0")}-new`;delete weeklyValidationDrafts[key]}weeklyValidationEditingId="";weeklyValidationNewWeek=0;renderStakeholderValidation(true)}
-if(action==="delete"){
-if(memberRole()!=="qa"||!id){$("weeklyValidationStatus").textContent="Solo la Stakeholder puede eliminar validaciones.";return}
+const id=button.dataset.validationId;
+if(memberRole()!=="qa"||!/^week-(0[1-9]|1[0-5])$/.test(id||"")){$("weeklyValidationStatus").textContent="Solo la Stakeholder puede eliminar una validación semanal actual.";return}
 if(!cloudReady||!currentUid){$("weeklyValidationStatus").textContent="Sin conexión a Firestore; no se eliminó la prueba.";return}
-if(!window.confirm("¿Eliminar esta prueba y sus observaciones de Firestore para todo el equipo? Esta acción no se puede deshacer."))return;
-db.collection("validacionesSemanales").doc(id).delete().then(()=>{delete weeklyValidationDrafts[id];delete weeklyValidations[id];$("weeklyValidationStatus").textContent="Prueba eliminada y cambio sincronizado con el equipo.";renderStakeholderValidation(true)}).catch(error=>{$("weeklyValidationStatus").textContent=`No se eliminó la prueba: ${error.message}`;console.error("No se pudo eliminar la validación semanal.",error)})
-}
+if(!window.confirm("¿Eliminar la validación actual de esta semana? El historial anterior se conservará."))return;
+clearTimeout(weeklyValidationAutosaveTimers[id]);
+db.collection("validacionesSemanales").doc(id).delete().then(()=>{delete weeklyValidationDrafts[id];delete weeklyValidations[id];$("weeklyValidationStatus").textContent="Validación semanal eliminada. El historial anterior se conserva.";renderStakeholderValidation(true)}).catch(error=>{$("weeklyValidationStatus").textContent=`No se eliminó la validación: ${error.message}`;console.error("No se pudo eliminar la validación semanal.",error)})
 return
 }
 const approval=event.target.closest("[data-approval-delete]");if(approval)deleteRequirementApproval(approval.dataset.approvalDelete)
