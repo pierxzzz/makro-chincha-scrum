@@ -443,7 +443,7 @@ const signedIn=Boolean(who),canEdit=memberRole()==="qa";
 $("stakeholderNav").hidden=!signedIn;$("stakeholderValidation").hidden=!signedIn;
 if(!signedIn)return;
 const container=$("weeklyValidationList");
-if(!cloudReady){container.innerHTML='<p class="empty-state">Inicia sesión para consultar o registrar la validación semanal del equipo.</p>';return}
+if(!cloudReady){container.dataset.loaded="";container.innerHTML='<p class="empty-state">Inicia sesión para consultar o registrar la validación semanal del equipo.</p>';return}
 if(!force&&container.dataset.loaded==="true")return;
 container.dataset.loaded="true";
 const weekRecords=week=>Object.entries(weeklyValidations).filter(([,data])=>Number(data.week)===week).map(([id,data])=>({id,data})).sort((a,b)=>(eventDate(b.data)?.getTime()||0)-(eventDate(a.data)?.getTime()||0));
